@@ -12,11 +12,13 @@ Everything it needs is packaged inside the APK.
 
 ## Permissions
 
-The app declares exactly one permission:
+The app declares two permissions, neither of which grants access to any device
+capability and neither of which is ever prompted for:
 
 | Permission | Why |
 | --- | --- |
-| `android.permission.INTERNET` | Capacitor serves the bundled web assets over an in-process `https://localhost` server. INTERNET is not a runtime permission, is never prompted for, and grants no access to anything on the device. |
+| `android.permission.INTERNET` | Capacitor serves the bundled web assets over an in-process `https://localhost` server. INTERNET is not a runtime permission and grants no access to anything on the device. |
+| `<package>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Generated automatically by AndroidX Core for its own use of `registerReceiver`. It is signature-level and namespaced under this app's own package, so no other app can ever hold it, and it protects nothing but an internal broadcast. |
 
 There is no access to storage, camera, microphone, location, contacts, calendar,
 phone state, SMS, Bluetooth or nearby devices — none of these are declared, so
@@ -24,7 +26,11 @@ the platform will not grant them.
 
 This is enforced, not just documented: CI reads the permissions out of the
 **merged** manifest of the built APK and fails if the set is anything other than
-`INTERNET` alone. A dependency that quietly adds a permission breaks the build.
+those two exactly. The package-scoped name is derived from the APK rather than
+pattern-matched, so the check cannot be satisfied by an unrelated permission
+that happens to look similar. A dependency that quietly adds a permission breaks
+the build — this is not hypothetical; the AndroidX permission above was found
+this way.
 
 ## Network
 
