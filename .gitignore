@@ -9,3 +9,5 @@ www/
 # Signing keys must never enter version control.
 *.jks
 *.keystore
+*.standalone.html
+pentaword-standalone.html

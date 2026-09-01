@@ -32,11 +32,16 @@ Browsers refuse to load JavaScript modules over `file://`, so opening
 Any static file server works — `npm start` just saves you choosing one. To
 deploy, upload the repository as-is to any static host.
 
+To hand the game to someone with no server at all, `npm run build:standalone`
+bundles everything into a single `pentaword-standalone.html` that plays by
+opening it — useful for sending a playable copy to a phone.
+
 ```bash
 npm test              # unit tests for the game logic (Node's built-in runner)
 npm run build:words   # regenerate the word lists (needs network)
 npm run build:icons   # regenerate the app icons from the logo geometry
 npm run build:www     # stage the exact files that ship inside the Android app
+npm run build:standalone  # bundle the game into one self-contained .html file
 npm run sync:android  # stage www/ and copy it into the Android project
 npm run open:android  # open the Android project in Android Studio
 ```
