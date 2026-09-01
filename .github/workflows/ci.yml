@@ -26,6 +26,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
+
       - name: Unit tests
         run: npm test
 
@@ -67,6 +70,25 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
+
+      - name: Confirm the app asks for no permissions it should not have
+        run: |
+          APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -1)
+          # Read the permissions out of the *merged* manifest in the built APK,
+          # so a permission introduced by a dependency is caught too.
+          "$AAPT" dump permissions "$APK" \
+            | sed -n "s/^uses-permission: name='\([^']*\)'.*/\1/p" | sort -u > perms.txt
+          echo "Declared permissions:"; cat perms.txt
+          # INTERNET is the only one this app may hold. It is not a runtime
+          # permission and grants no access to anything on the device; Capacitor
+          # needs it for its in-process localhost server.
+          echo "android.permission.INTERNET" > allowed.txt
+          if ! diff -q perms.txt allowed.txt > /dev/null; then
+            echo "::error::Unexpected permissions. Only INTERNET is allowed."
+            diff allowed.txt perms.txt || true
+            exit 1
+          fi
 
       - name: Confirm the game is packaged inside the APK
         run: |

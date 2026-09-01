@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pentaword makes no network requests: every asset it needs is packaged in the
+    APK and served in-process by Capacitor over https://localhost.
+
+    This configuration makes that structural rather than incidental — unencrypted
+    traffic is refused outright, and only the system's own trusted certificate
+    store is honoured, so a user-installed root certificate cannot be used to
+    intercept anything the app might one day send.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

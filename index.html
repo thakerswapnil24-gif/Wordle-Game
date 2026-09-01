@@ -2,6 +2,38 @@
 <html lang="en" data-theme="light" data-contrast="normal">
 <head>
 <meta charset="utf-8">
+<!--
+  Content Security Policy.
+
+  `connect-src 'self'` is the important one: it makes it impossible for this
+  page to contact any server, which is the guarantee the privacy policy makes.
+  Everything else is locked to same-origin, and plugins, framing, <base> and
+  form submission are refused outright. (`frame-ancestors` is deliberately
+  absent: browsers ignore it in a meta tag, and a packaged app cannot be
+  framed in any case.)
+
+  'unsafe-inline' is required and unavoidable in both script-src and style-src:
+  Capacitor injects its native bridge as an inline <script> at runtime, and the
+  board sets per-tile animation delays through inline style attributes. The
+  practical risk is nil — the app has no server, no user-supplied content, and
+  every value it renders goes through textContent rather than innerHTML.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data:;
+  font-src 'self';
+  connect-src 'self';
+  media-src 'none';
+  object-src 'none';
+  frame-src 'none';
+  child-src 'none';
+  worker-src 'none';
+  base-uri 'none';
+  form-action 'none';
+">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
 <title>Pentaword — a five-letter word game</title>
 <meta name="description" content="Pentaword is a daily five-letter word puzzle. Six tries, one word a day, plus unlimited practice rounds.">

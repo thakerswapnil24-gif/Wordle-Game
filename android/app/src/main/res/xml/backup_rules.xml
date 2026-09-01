@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 and below. Statistics and settings are included so a player's
+    streak survives a new phone; nothing else the app writes is worth keeping,
+    and none of it is sensitive.
+-->
+<full-backup-content>
+    <include domain="file" path="." />
+    <exclude domain="file" path="cache" />
+    <exclude domain="database" path="." />
+</full-backup-content>
