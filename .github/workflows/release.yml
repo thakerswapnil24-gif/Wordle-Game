@@ -49,15 +49,28 @@ jobs:
 
       - name: Resolve version
         id: version
+        # Inputs reach the script through the environment rather than being
+        # interpolated into the shell, so a value containing shell syntax is
+        # data, never code.
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+          INPUT_NAME: ${{ inputs.versionName }}
+          INPUT_CODE: ${{ inputs.versionCode }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            NAME="${GITHUB_REF_NAME#v}"
-            # Derive a monotonic version code from the tag: 1.2.3 -> 10203
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$NAME"
-            CODE=$(( ${MAJOR:-0} * 10000 + ${MINOR:-0} * 100 + ${PATCH:-0} ))
+          if [ "$EVENT" = "push" ]; then
+            read -r NAME CODE < <(tools/version-code.sh "$TAG")
           else
-            NAME="${{ inputs.versionName }}"
-            CODE="${{ inputs.versionCode }}"
+            NAME="$INPUT_NAME"
+            CODE="$INPUT_CODE"
+            if ! printf '%s' "$CODE" | grep -qE '^[1-9][0-9]*$'; then
+              echo "::error::versionCode must be a positive whole number; got '$CODE'"
+              exit 1
+            fi
+            if ! printf '%s' "$NAME" | grep -qE '^[0-9A-Za-z.+-]+$'; then
+              echo "::error::versionName must be a plain version string; got '$NAME'"
+              exit 1
+            fi
           fi
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "code=$CODE" >> "$GITHUB_OUTPUT"

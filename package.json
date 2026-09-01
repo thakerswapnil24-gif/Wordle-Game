@@ -12,7 +12,8 @@
     "build:icons": "node tools/build-icons.mjs",
     "build:www": "node tools/build-www.mjs",
     "sync:android": "node tools/build-www.mjs && cap sync android",
-    "open:android": "cap open android"
+    "open:android": "cap open android",
+    "build:standalone": "node tools/build-standalone.mjs"
   },
   "engines": {
     "node": ">=18"

@@ -49,10 +49,13 @@ export function applyNativeTheme(dark) {
   const statusBar = plugin('StatusBar');
   if (!statusBar) return;
   // Capacitor's Style.Dark means "light content, for a dark background".
-  statusBar.setStyle({ style: dark ? 'DARK' : 'LIGHT' }).catch(() => {});
+  // Each call is fully optional-chained: this runs on every theme change, and a
+  // plugin that is missing a method or returns something other than a promise
+  // must not throw out of the settings handler that called it.
+  statusBar.setStyle?.({ style: dark ? 'DARK' : 'LIGHT' })?.catch?.(() => {});
   // A no-op on Android 15+, where the bars are always transparent, but it keeps
   // older devices from showing a mismatched strip above the board.
-  statusBar.setBackgroundColor({ color: dark ? '#0E1015' : '#F6F7FB' }).catch(() => {});
+  statusBar.setBackgroundColor?.({ color: dark ? '#0E1015' : '#F6F7FB' })?.catch?.(() => {});
 }
 
 /** Dismiss the launch screen once the game is actually on screen. */
@@ -67,8 +70,16 @@ export function hideSplash() {
  */
 export function onBackButton(handler) {
   const app = plugin('App');
-  if (!app) return;
+  if (!app?.addListener) return;
   app.addListener('backButton', () => {
-    if (!handler()) app.exitApp();
+    // A throwing handler must still leave the button working rather than
+    // trapping the player in the app.
+    let consumed = false;
+    try {
+      consumed = handler() === true;
+    } catch {
+      consumed = false;
+    }
+    if (!consumed) app.exitApp?.();
   });
 }
