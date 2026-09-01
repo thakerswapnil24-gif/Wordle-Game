@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pentaword brand, mirroring the CSS tokens in src/styles/base.css. -->
+    <color name="colorPrimary">#5A5FE0</color>
+    <color name="colorPrimaryDark">#4A4FD4</color>
+    <color name="colorAccent">#12A37B</color>
+
+    <!-- Shown behind the WebView and on the launch screen (light theme). -->
+    <color name="appBackground">#F6F7FB</color>
+</resources>

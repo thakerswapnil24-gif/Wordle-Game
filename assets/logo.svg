@@ -1,15 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Quintle">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Pentaword">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="pentawordMark" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#7b6ef6"/>
       <stop offset="55%" stop-color="#4f7ef0"/>
       <stop offset="100%" stop-color="#10a37b"/>
     </linearGradient>
   </defs>
-  <rect x="1" y="1" width="38" height="38" rx="11.5" fill="url(#g)"/>
+  <rect x="1" y="1" width="38" height="38" rx="11.5" fill="url(#pentawordMark)"/>
   <g fill="#fff">
-    <circle cx="13" cy="13" r="3.1"/><circle cx="27" cy="13" r="3.1"/>
-    <circle cx="20" cy="20" r="3.1"/>
-    <circle cx="13" cy="27" r="3.1"/><circle cx="27" cy="27" r="3.1"/>
+    <rect x="14.8" y="10.5" width="4" height="19" rx="1.6"/>
+    <path fill-rule="evenodd" d="M18.8 10.4A6.4 6.4 0 0 1 18.8 23.2ZM18.8 14.4A2.4 2.4 0 0 1 18.8 19.2Z"/>
   </g>
 </svg>

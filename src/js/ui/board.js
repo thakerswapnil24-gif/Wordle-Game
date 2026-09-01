@@ -9,6 +9,8 @@ import { MAX_GUESSES, TILE, TIMING, WORD_LENGTH } from '../config.js';
 
 /** Tiles stop growing past this so the board stays elegant on large screens. */
 const MAX_TILE_SIZE = 68;
+/** Floor for very short viewports; the landscape layout keeps us well above it. */
+const MIN_TILE_SIZE = 20;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined'
@@ -43,7 +45,7 @@ export class Board {
       const padding = parseFloat(getComputedStyle(parent).paddingTop) * 2;
       const byWidth = (width - gap * (WORD_LENGTH - 1)) / WORD_LENGTH;
       const byHeight = (height - padding - gap * (MAX_GUESSES - 1)) / MAX_GUESSES;
-      const size = Math.max(30, Math.min(byWidth, byHeight, MAX_TILE_SIZE));
+      const size = Math.max(MIN_TILE_SIZE, Math.min(byWidth, byHeight, MAX_TILE_SIZE));
       this.root.style.setProperty('--tile-size', `${Math.floor(size)}px`);
     };
     this.observer = new ResizeObserver(fit);

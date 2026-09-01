@@ -1,3 +1,11 @@
 node_modules/
 .DS_Store
 *.log
+
+# Staged copy of the game that Capacitor packages into the app.
+# Regenerate with `npm run build:www`.
+www/
+
+# Signing keys must never enter version control.
+*.jks
+*.keystore

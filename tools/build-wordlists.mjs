@@ -2,44 +2,78 @@
 /**
  * Regenerates `src/data/answers.js` and `src/data/allowed.js`.
  *
+ * Provenance
+ * ----------
+ * Both lists are built only from general-purpose, freely redistributable
+ * sources. Nothing here is derived from another word game's word list:
+ *
+ *   dictionary — dwyl/english-words, a public-domain English word list.
+ *   frequency  — first20hours/google-10000-english, words ranked by how often
+ *                they occur in the Google Web Trillion Word Corpus.
+ *   profanity  — LDNOOBW, a community list of obscene terms to exclude.
+ *
  * Curation recipe
  * ---------------
- * Guess list   : every 5-letter entry of a public-domain English word list that is
- *                also playable (present in the reference 5-letter corpus), plus any
- *                5-letter word from the common-usage frequency list that a general
- *                dictionary confirms. Profanity is removed.
- * Answer list  : ordered by real-world usage frequency, restricted to words that are
- *                in BOTH dictionaries (this drops brand names and proper nouns, which
- *                the frequency corpus is full of), then hand-curated via BLOCKLIST.
- *                Trivial plurals ("books", "years") are dropped so answers feel fair.
+ * Guess list   — every five-letter word in the dictionary, minus profanity.
+ *                Permissive on purpose: rejecting a word a player knows is far
+ *                more annoying than accepting an obscure one.
+ * Answer list  — the five-letter words of the frequency list that the
+ *                dictionary confirms, in frequency order, minus profanity,
+ *                minus trivial plurals, minus BLOCKLIST.
  *
- * Usage: node tools/build-wordlists.mjs   (requires network access)
+ * BLOCKLIST is the hand-curation step and it is meant to be maintained. A
+ * frequency corpus drawn from the web is full of names, places and brands that
+ * a dictionary happens to also contain in lowercase, and no automatic rule
+ * separates them reliably. After changing a source, re-read the printed answer
+ * list and add anything that should not be a puzzle solution.
+ *
+ * Usage: node tools/build-wordlists.mjs [--print]   (requires network access)
  */
 import { writeFile } from 'node:fs/promises';
 
 const SOURCES = {
-  // A curated corpus of playable 5-letter English words.
-  playable: 'https://raw.githubusercontent.com/tabatkins/wordle-list/main/words',
-  // A large public-domain English dictionary (Infochimps word list).
   dictionary: 'https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt',
-  // Words ordered by frequency of use, derived from the Google Web Trillion Word Corpus.
   frequency: 'https://raw.githubusercontent.com/first20hours/google-10000-english/master/google-10000-english-usa.txt',
-  // Community list of profane / obscene terms to exclude.
   profanity: 'https://raw.githubusercontent.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en',
 };
 
-/** Proper nouns, brand names, technical jargon and unpleasant words the automatic
- *  filters cannot detect. Excluded from the ANSWER list only — they stay guessable. */
+/**
+ * Excluded from the ANSWER list only — every one of these is still a legal
+ * guess. Grouped by why it is here.
+ */
 const BLOCKLIST = new Set(`
-allan allen barry belle betty billy bobby burke carol chevy chile china cisco cohen
-colin congo costa craig danny derby devon diana diane donna dover greek harry henry
-honda india intel james japan jenny jerry jesse jimmy jones julia kelly kerry laura
-leone lewis logan louis maria monte nancy oscar perry peter ralph randy roger roman
-sally spain sudan terry texas tommy tyler verde welsh xerox yahoo yeast chuck cedar
-admin debug devel login setup intro promo inter macro modem gonna gotta wanna remix
-boxes buses taxes spies tries anime manga samba mambo scuba disco cyber retro turbo
-abuse death drunk fraud naked nasty slave spank sperm theft thong tumor booty rouge
-`.trim().split(/\s+/));
+${/* People's names */ ''}
+aaron alice allan allen annie barry belle betty billy blair blake bobby brian
+bruce bryan carey carlo casey chris cindy clara clark derek david davis dylan
+eddie edgar ellen elvis emily glenn helen isaac jacob jamie janet jason jenny
+jerry jesse jimmy joyce julie karen kathy katie keith kenny kevin larry linda
+lloyd lucia marco maria marie mario moore nancy oscar perry peter ralph randy
+ricky roger sarah scott simon singh steve susan terry tommy tracy tyler wayne
+wendy floyd harry henry holly jones julia kelly kerry laura lewis louis nikon
+sally smith cohen colin craig danny devon diana diane donna james leone monte
+${/* Places, nationalities and languages */ ''}
+april asian chile china congo costa czech delhi diego egypt essex ghana haiti
+hindu idaho iraqi irish islam italy japan kenya korea latin maine malta miami
+milan nepal notre omaha papua qatar salem samoa santa saudi sudan syria tamil
+tampa tokyo tulsa welsh yemen yukon burke dover greek india logan roman spain
+texas verde dutch
+${/* Brands and product names */ ''}
+cisco honda intel kodak mazda xerox yahoo chevy
+${/* Jargon, abbreviations and web-corpus noise */ ''}
+admin ascii const debug devel login setup intro promo inter macro modem allah
+mardi multi
+${/* Informal contractions the frequency corpus is full of */ ''}
+gonna gotta wanna
+${/* Plurals the automatic rule does not catch */ ''}
+boxes buses spies taxes tries
+${/* Loanwords that read as proper nouns or are too niche for a daily answer */ ''}
+anime manga samba mambo scuba disco cyber retro turbo
+${/* Unpleasant, distressing or crude — not what anyone wants at breakfast */ ''}
+abuse death drunk fraud naked nasty slave spank sperm theft thong tumor booty
+rouge chuck cedar yeast laden chick
+${/* Religious texts and figures — kept out so no faith is singled out */ ''}
+bible
+`.trim().split(/\s+/).filter(Boolean));
 
 const IS_WORD = /^[a-z]{5}$/;
 
@@ -62,44 +96,50 @@ function module_(name, doc, words) {
     + `export const ${name} = \`\n${chunk(words).join('\n')}\n\`.trim().split(/\\s+/);\n`;
 }
 
-const [playableRaw, dictionaryRaw, frequencyRaw, profanityRaw] = await Promise.all(
+const [dictionaryRaw, frequencyRaw, profanityRaw] = await Promise.all(
   Object.values(SOURCES).map(fetchWords),
 );
 
-const playable = new Set(playableRaw.filter((w) => IS_WORD.test(w)));
 const dictionaryAll = new Set(dictionaryRaw);
-const dictionary = new Set(dictionaryRaw.filter((w) => IS_WORD.test(w)));
+const dictionary = dictionaryRaw.filter((w) => IS_WORD.test(w));
 const frequency = frequencyRaw.filter((w) => IS_WORD.test(w));
 const profanity = new Set(profanityRaw);
 
-const allowed = [...new Set([
-  ...playable,
-  ...frequency.filter((w) => dictionary.has(w)),
-])].filter((w) => !profanity.has(w)).sort();
+const allowed = [...new Set(dictionary)].filter((w) => !profanity.has(w)).sort();
 
-const isTrivialPlural = (w) => w.endsWith('s') && !w.endsWith('ss') && dictionaryAll.has(w.slice(0, -1));
+/** "books", "years" — fair as guesses, unsatisfying as a solution. */
+const isTrivialPlural = (w) =>
+  w.endsWith('s') && !w.endsWith('ss') && dictionaryAll.has(w.slice(0, -1));
 
+const allowedSet = new Set(allowed);
 const seen = new Set();
 const answers = frequency.filter((w) => {
-  if (seen.has(w) || !playable.has(w) || !dictionary.has(w)) return false;
-  if (profanity.has(w) || BLOCKLIST.has(w) || isTrivialPlural(w)) return false;
+  if (seen.has(w) || !allowedSet.has(w)) return false;
+  if (BLOCKLIST.has(w) || isTrivialPlural(w)) return false;
   seen.add(w);
   return true;
 });
 
-const allowedSet = new Set(allowed);
-const orphans = answers.filter((w) => !allowedSet.has(w));
-if (orphans.length) throw new Error(`answers missing from guess list: ${orphans.join(', ')}`);
+if (answers.length < 500) {
+  throw new Error(`only ${answers.length} answers survived curation — check the sources`);
+}
 
 await writeFile('src/data/answers.js', module_(
   'ANSWERS',
-  'Daily/practice solutions, ordered from most to least common in everyday English.',
+  'Puzzle solutions, ordered from most to least common in everyday English.',
   answers,
 ));
 await writeFile('src/data/allowed.js', module_(
   'ALLOWED_GUESSES',
-  'Extra words accepted as guesses. The full valid set is ALLOWED_GUESSES + ANSWERS.',
+  'Words accepted as guesses only. The full valid set is ALLOWED_GUESSES + ANSWERS.',
   allowed.filter((w) => !seen.has(w)),
 ));
 
-console.log(`answers: ${answers.length}\nallowed extras: ${allowed.length - answers.length}\ntotal valid guesses: ${allowed.length}`);
+console.log(`answers: ${answers.length}`);
+console.log(`guess-only words: ${allowed.length - answers.length}`);
+console.log(`total valid guesses: ${allowed.length}`);
+
+if (process.argv.includes('--print')) {
+  console.log('\nAnswer list for review:\n');
+  for (const line of chunk(answers)) console.log(`  ${line}`);
+}

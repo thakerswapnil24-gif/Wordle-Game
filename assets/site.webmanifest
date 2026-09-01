@@ -1,6 +1,6 @@
 {
-  "name": "Quintle — a five-letter word game",
-  "short_name": "Quintle",
+  "name": "Pentaword — a five-letter word game",
+  "short_name": "Pentaword",
   "description": "A daily five-letter word puzzle with six tries, plus unlimited practice rounds.",
   "start_url": "../index.html",
   "scope": "../",

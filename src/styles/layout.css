@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Quintle — page structure
+   Pentaword — page structure
    ========================================================================== */
 
 .app {
@@ -157,4 +157,49 @@
 
 @media (min-width: 480px) {
   :root { --tile-gap: 8px; --key-gap: 7px; }
+}
+
+/* --------------------------------------------------------------------------
+   Short landscape (phones turned sideways, and foldables).
+
+   A 5x6 grid stacked above a keyboard needs height, which a landscape phone
+   does not have. Rather than shrink everything into illegibility, the board and
+   the keyboard sit side by side and each takes the full height available.
+   Tablets keep the portrait-style layout: they are tall enough, and Android 16
+   ignores orientation locks on large screens anyway.
+   -------------------------------------------------------------------------- */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    /* The two flexible rows are empty spacers: they centre the mode switch and
+       keyboard as one group beside the board, rather than pinning the switch to
+       the top and stranding the keyboard in the middle. */
+    grid-template-rows: auto minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'top  top'
+      'play .'
+      'play modes'
+      'play keys'
+      'play .';
+    column-gap: clamp(10px, 3vw, 28px);
+    max-width: 900px;
+  }
+
+  .topbar { grid-area: top; min-height: 46px; }
+  .play { grid-area: play; padding: 8px 0; }
+  .modes { grid-area: modes; padding: 6px 0 2px; }
+  .footer { grid-area: keys; align-self: center; padding-top: 0; }
+
+  .key { height: clamp(38px, 13dvh, 52px); }
+  .modes__caption { display: none; }
+}
+
+/* Very short landscape: reclaim the last of the vertical space. */
+@media (orientation: landscape) and (max-height: 400px) {
+  .topbar { min-height: 40px; }
+  .brand__name { font-size: 1.1rem; }
+  .modes { padding: 2px 0 0; }
+  .modes__tab { padding: 4px 12px; min-width: 78px; font-size: 0.8rem; }
 }

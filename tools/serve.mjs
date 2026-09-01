@@ -57,5 +57,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Quintle is running at http://localhost:${PORT}`);
+  console.log(`Pentaword is running at http://localhost:${PORT}`);
 });

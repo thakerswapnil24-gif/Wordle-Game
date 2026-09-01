@@ -6,6 +6,7 @@
  * the letters that were guessed.
  */
 import { BRAND, MAX_GUESSES, MODE, STATUS, TILE } from './config.js';
+import { shareViaNative } from './native.js';
 
 const SQUARES = {
   standard: {
@@ -52,6 +53,10 @@ export function buildShareText(game, options = {}) {
  * @returns {Promise<'shared'|'copied'|'failed'>}
  */
 export async function shareText(text) {
+  // Inside the Android app, go straight to the system share sheet.
+  const native = await shareViaNative(text, `${BRAND.name} result`);
+  if (native === 'shared') return 'shared';
+
   const canNativeShare = typeof navigator !== 'undefined'
     && typeof navigator.share === 'function'
     && typeof navigator.canShare === 'function'

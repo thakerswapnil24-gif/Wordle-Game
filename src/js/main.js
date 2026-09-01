@@ -17,6 +17,7 @@ import { applyResult, loadStats, saveStats } from './stats.js';
 import { buildShareText, shareText } from './share.js';
 import { applySettings, isDark, loadSettings, nextTheme, saveSettings, THEME } from './settings.js';
 import * as storage from './storage.js';
+import { applyNativeTheme, hideSplash, isNative, onBackButton } from './native.js';
 import { Board } from './ui/board.js';
 import { Keyboard } from './ui/keyboard.js';
 import { Modal } from './ui/modal.js';
@@ -47,6 +48,7 @@ let modals;
 
 function boot() {
   applySettings(state.settings);
+  applyNativeTheme(isDark(state.settings));
 
   board = new Board($('board'));
   keyboard = new Keyboard($('keyboard'), handleAction);
@@ -73,7 +75,10 @@ function boot() {
   setMode(state.mode, { animate: false });
 
   $('app').hidden = false;
-  window.__quintleBooted = true;
+  window.__pentawordBooted = true;
+  document.documentElement.dataset.platform = isNative() ? 'native' : 'web';
+  hideSplash();
+  wireBackButton();
 
   if (!hasPlayedBefore()) {
     modals.help.open();
@@ -87,7 +92,26 @@ function boot() {
   });
 }
 
-const SEEN_KEY = 'quintle:seen-intro:v1';
+/**
+ * On Android, the back gesture should dismiss whatever is on top before it
+ * leaves the game — closing a dialog first, and only exiting from the board.
+ */
+function wireBackButton() {
+  onBackButton(() => {
+    const open = document.querySelector('dialog[open]');
+    if (!open) return false;
+    for (const modal of Object.values(modals)) {
+      if (modal.dialog === open) {
+        modal.close();
+        return true;
+      }
+    }
+    open.close();
+    return true;
+  });
+}
+
+const SEEN_KEY = 'pentaword:seen-intro:v1';
 const hasPlayedBefore = () => storage.read(SEEN_KEY, (v) => (v === true ? true : null), false);
 const markPlayed = () => storage.write(SEEN_KEY, true);
 
@@ -391,6 +415,7 @@ function wireChrome() {
   window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
     if (state.settings.theme === THEME.SYSTEM) {
       applySettings(state.settings);
+      applyNativeTheme(isDark(state.settings));
       syncThemeControls();
     }
   });
@@ -432,7 +457,7 @@ function paintStats() {
   // it means starting a practice round instead.
   const newGameButton = $('new-game-button');
   newGameButton.hidden = !game?.isOver;
-  newGameButton.textContent = scope === MODE.PRACTICE ? 'New word' : 'Practice word';
+  newGameButton.textContent = scope === MODE.PRACTICE ? 'New word' : 'Practice';
 
   $('countdown').hidden = scope !== MODE.DAILY;
 }
@@ -491,6 +516,7 @@ function bindSwitch(id, read, onToggle) {
 
 function commitSettings() {
   applySettings(state.settings);
+  applyNativeTheme(isDark(state.settings));
   saveSettings(state.settings);
   syncThemeControls();
   for (const game of Object.values(state.games)) persist(game);

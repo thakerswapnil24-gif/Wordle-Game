@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Quintle — components
+   Pentaword — components
    ========================================================================== */
 
 /* Icon buttons ----------------------------------------------------------- */
@@ -353,6 +353,10 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  /* Reserve two lines for every label so the four figures keep a shared
+     baseline on narrow phones, where "Current streak" wraps and the rest
+     do not. */
+  min-height: 2.5em;
 }
 
 .stats__heading {

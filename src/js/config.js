@@ -4,7 +4,7 @@
  */
 
 export const BRAND = {
-  name: 'Quintle',
+  name: 'Pentaword',
   tagline: 'Five letters. Six tries. One word a day.',
 };
 
@@ -44,10 +44,10 @@ export const DAILY_SEED = 0x5175_696e;
 
 /** localStorage keys. Namespaced so the app never collides with other pages. */
 export const STORAGE_KEYS = Object.freeze({
-  settings: 'quintle:settings:v1',
-  stats: 'quintle:stats:v1',
-  daily: 'quintle:game:daily:v1',
-  practice: 'quintle:game:practice:v1',
+  settings: 'pentaword:settings:v1',
+  stats: 'pentaword:stats:v1',
+  daily: 'pentaword:game:daily:v1',
+  practice: 'pentaword:game:practice:v1',
 });
 
 /** Animation timings (ms). Mirrored in CSS custom properties. */

@@ -23,7 +23,7 @@ function backend() {
   if (memoryFallback) return memoryFallback;
   try {
     if (typeof window === 'undefined') throw new Error('no window');
-    const probe = '__quintle_probe__';
+    const probe = '__pentaword_probe__';
     window.localStorage.setItem(probe, probe);
     window.localStorage.removeItem(probe);
     return window.localStorage;

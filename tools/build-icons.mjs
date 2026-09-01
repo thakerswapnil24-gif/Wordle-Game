@@ -1,16 +1,36 @@
 #!/usr/bin/env node
 /**
- * Renders the Quintle mark to PNG app icons.
+ * Renders the Pentaword mark to every raster icon the project needs.
  *
- * Browsers happily use `assets/favicon.svg`, but iOS home-screen icons and some
- * PWA installers still require raster files. Rather than pull in a rendering
- * dependency, the mark is simple enough (a rounded square with a gradient and
- * five dots) to rasterise directly and encode with Node's built-in zlib.
+ * The mark is simple enough — a rounded letter tile with a diagonal gradient
+ * and a geometric "P" — to rasterise directly, so the project needs no image
+ * dependency and the icons stay in sync with assets/logo.svg.
+ *
+ * Outputs:
+ *   assets/icon-{192,512}.png    web app manifest icons and the Play listing icon
+ *   ic_launcher.png              legacy square launcher icon, every density
+ *   ic_launcher_round.png        legacy round launcher icon, every density
+ *   ic_launcher_foreground.png   adaptive-icon foreground layer, every density
  *
  * Usage: node tools/build-icons.mjs
  */
 import { deflateSync } from 'node:zlib';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+
+/* ----------------------------- the mark itself ---------------------------- */
+
+/** The design is authored on a 40x40 grid, matching assets/logo.svg. */
+const VIEW = 40;
+const CORNER = 11.5;
+
+/*
+ * The mark is a letter tile bearing a "P" — the visual language every word
+ * game shares, drawn geometrically so the icons need no font or image library.
+ * The glyph is a rounded stem plus a half-annulus bowl.
+ */
+const STEM = { x0: 14.8, x1: 18.8, y0: 10.5, y1: 29.5, r: 1.6 };
+const BOWL = { cx: 18.8, cy: 16.8, outer: 6.4, inner: 2.4 };
 
 const STOPS = [
   { at: 0.0, rgb: [0x7b, 0x6e, 0xf6] },
@@ -18,11 +38,7 @@ const STOPS = [
   { at: 1.0, rgb: [0x10, 0xa3, 0x7b] },
 ];
 
-const DOTS = [[13, 13], [27, 13], [20, 20], [13, 27], [27, 27]];
-const DOT_R = 3.1;
-const CORNER = 11.5;
-const VIEW = 40;
-const SS = 4; // supersampling factor for smooth edges
+const SS = 4; // supersampling factor per axis
 
 function gradientAt(t) {
   const clamped = Math.min(1, Math.max(0, t));
@@ -37,47 +53,89 @@ function gradientAt(t) {
   return STOPS.at(-1).rgb;
 }
 
-/** Signed test: is (x, y) inside the rounded square? */
-function insideRoundedRect(x, y) {
-  const min = 0;
-  const max = VIEW;
-  if (x < min || y < min || x > max || y > max) return false;
-  const cx = Math.min(Math.max(x, min + CORNER), max - CORNER);
-  const cy = Math.min(Math.max(y, min + CORNER), max - CORNER);
-  const dx = x - cx;
-  const dy = y - cy;
-  return dx * dx + dy * dy <= CORNER * CORNER;
+const insideRoundedRect = (x, y) => {
+  if (x < 0 || y < 0 || x > VIEW || y > VIEW) return false;
+  const cx = Math.min(Math.max(x, CORNER), VIEW - CORNER);
+  const cy = Math.min(Math.max(y, CORNER), VIEW - CORNER);
+  return (x - cx) ** 2 + (y - cy) ** 2 <= CORNER * CORNER;
+};
+
+const insideCircle = (x, y) => {
+  const r = VIEW / 2;
+  return (x - r) ** 2 + (y - r) ** 2 <= r * r;
+};
+
+/** The stem of the P: a rounded rectangle. */
+function insideStem(x, y) {
+  const { x0, x1, y0, y1, r } = STEM;
+  if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+  const cx = Math.min(Math.max(x, x0 + r), x1 - r);
+  const cy = Math.min(Math.max(y, y0 + r), y1 - r);
+  return (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
 }
 
-function insideDots(x, y) {
-  return DOTS.some(([dx, dy]) => (x - dx) ** 2 + (y - dy) ** 2 <= DOT_R * DOT_R);
+/** The bowl of the P: the right half of a ring. */
+function insideBowl(x, y) {
+  if (x < BOWL.cx) return false;
+  const d = Math.hypot(x - BOWL.cx, y - BOWL.cy);
+  return d <= BOWL.outer && d >= BOWL.inner;
 }
 
-function render(size) {
+const insideGlyph = (x, y) => insideStem(x, y) || insideBowl(x, y);
+
+/**
+ * @param {number} size pixel size of the square output
+ * @param {{shape?: 'rounded'|'circle'|'none', inset?: number}} options
+ *   `shape` is the silhouette the gradient fills; 'none' draws only the dots on
+ *   transparency, which is what an adaptive icon foreground layer needs.
+ *   `inset` shrinks the artwork within the canvas, as a fraction of the canvas —
+ *   adaptive icons need the art to sit inside the central safe zone.
+ */
+function render(size, { shape = 'rounded', inset = 0 } = {}) {
   const pixels = Buffer.alloc(size * size * 4);
-  const scale = VIEW / size;
+  const art = size * (1 - 2 * inset);
+  const origin = size * inset;
+  const scale = VIEW / art;
+  const silhouette = shape === 'circle' ? insideCircle : insideRoundedRect;
+
   for (let py = 0; py < size; py += 1) {
     for (let px = 0; px < size; px += 1) {
-      let inside = 0;
+      let body = 0;
       let dot = 0;
       for (let sy = 0; sy < SS; sy += 1) {
         for (let sx = 0; sx < SS; sx += 1) {
-          const x = (px + (sx + 0.5) / SS) * scale;
-          const y = (py + (sy + 0.5) / SS) * scale;
-          if (insideRoundedRect(x, y)) {
-            inside += 1;
-            if (insideDots(x, y)) dot += 1;
+          const x = ((px + (sx + 0.5) / SS) - origin) * scale;
+          const y = ((py + (sy + 0.5) / SS) - origin) * scale;
+          const inDot = insideGlyph(x, y);
+          if (shape === 'none') {
+            if (inDot) dot += 1;
+          } else if (silhouette(x, y)) {
+            body += 1;
+            if (inDot) dot += 1;
           }
         }
       }
+
       const samples = SS * SS;
-      const alpha = inside / samples;
-      const dotMix = dot / samples;
-      const x = (px + 0.5) * scale;
-      const y = (py + 0.5) * scale;
-      const base = gradientAt((x / VIEW + y / VIEW) / 2);
-      const rgb = base.map((c) => Math.round(c + (255 - c) * (alpha ? dotMix / alpha : 0)));
       const offset = (py * size + px) * 4;
+
+      if (shape === 'none') {
+        // White glyph on transparency.
+        const alpha = dot / samples;
+        pixels[offset] = 255;
+        pixels[offset + 1] = 255;
+        pixels[offset + 2] = 255;
+        pixels[offset + 3] = Math.round(alpha * 255);
+        continue;
+      }
+
+      const alpha = body / samples;
+      const x = ((px + 0.5) - origin) * scale;
+      const y = ((py + 0.5) - origin) * scale;
+      const base = gradientAt((x / VIEW + y / VIEW) / 2);
+      // Blend the glyph towards white in proportion to its coverage.
+      const mix = alpha ? Math.min(1, dot / samples / alpha) : 0;
+      const rgb = base.map((c) => Math.round(c + (255 - c) * mix));
       pixels[offset] = rgb[0];
       pixels[offset + 1] = rgb[1];
       pixels[offset + 2] = rgb[2];
@@ -115,8 +173,7 @@ function encodePng(pixels, size) {
   ihdr.writeUInt32BE(size, 0);
   ihdr.writeUInt32BE(size, 4);
   ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // RGBA
-  // filter method 0, no interlace — remaining bytes stay zero.
+  ihdr[9] = 6; // colour type: RGBA
 
   const stride = size * 4;
   const raw = Buffer.alloc((stride + 1) * size);
@@ -133,8 +190,53 @@ function encodePng(pixels, size) {
   ]);
 }
 
-for (const size of [192, 512]) {
-  const file = `assets/icon-${size}.png`;
-  writeFileSync(file, encodePng(render(size), size));
-  console.log(`wrote ${file}`);
+function write(file, size, options) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, encodePng(render(size, options), size));
+  return file;
 }
+
+/* --------------------------------- outputs -------------------------------- */
+
+const RES = 'android/app/src/main/res';
+
+/** Launcher icon sizes in px, per density bucket. */
+const LEGACY = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
+/** Adaptive icons are authored on a 108dp canvas regardless of density. */
+const ADAPTIVE = { mdpi: 108, hdpi: 162, xhdpi: 216, xxhdpi: 324, xxxhdpi: 432 };
+
+/**
+ * Adaptive-icon sizing.
+ *
+ * The canvas is 108dp but only its central 72dp is guaranteed to survive the
+ * launcher's mask, and a circular mask trims the corners of even that. The
+ * glyph is therefore sized directly: 46dp tall, centred, which fills the safe
+ * zone confidently while staying clear of every mask shape.
+ */
+const ADAPTIVE_CANVAS_DP = 108;
+const CLUSTER_TARGET_DP = 46;
+/** The glyph's own extent on the 40-unit grid, taken from its tallest axis. */
+const GLYPH_SPAN = STEM.y1 - STEM.y0;
+const ADAPTIVE_ART_DP = (CLUSTER_TARGET_DP * VIEW) / GLYPH_SPAN;
+const ADAPTIVE_INSET = (ADAPTIVE_CANVAS_DP - ADAPTIVE_ART_DP) / 2 / ADAPTIVE_CANVAS_DP;
+
+const written = [];
+
+for (const size of [192, 512]) {
+  written.push(write(`assets/icon-${size}.png`, size, { shape: 'rounded' }));
+}
+
+for (const [density, size] of Object.entries(LEGACY)) {
+  written.push(write(`${RES}/mipmap-${density}/ic_launcher.png`, size, { shape: 'rounded' }));
+  written.push(write(`${RES}/mipmap-${density}/ic_launcher_round.png`, size, { shape: 'circle' }));
+}
+
+for (const [density, size] of Object.entries(ADAPTIVE)) {
+  written.push(write(`${RES}/mipmap-${density}/ic_launcher_foreground.png`, size, {
+    shape: 'none',
+    inset: ADAPTIVE_INSET,
+  }));
+}
+
+console.log(`${written.length} icons written:`);
+for (const file of written) console.log(`  ${file}`);

@@ -36,7 +36,7 @@ test('high contrast sharing uses blue and orange', () => {
 test('the share text carries the score but never the answer', () => {
   const game = play('crane', ['audio', 'canoe', 'crane']);
   const text = buildShareText(game);
-  assert.ok(text.startsWith('Quintle #42 3/6'));
+  assert.ok(text.startsWith('Pentaword #42 3/6'));
   assert.equal(text.toLowerCase().includes('crane'), false, 'the answer must not leak');
   assert.equal(text.toLowerCase().includes('audio'), false, 'guesses must not leak');
   assert.equal(text.split('\n').filter(Boolean).length, 4);
@@ -44,17 +44,17 @@ test('the share text carries the score but never the answer', () => {
 
 test('a loss shares as X/6', () => {
   const game = play('crane', ['audio', 'plumb', 'gifts', 'wryly', 'hotel', 'stove']);
-  assert.ok(buildShareText(game).startsWith('Quintle #42 X/6'));
+  assert.ok(buildShareText(game).startsWith('Pentaword #42 X/6'));
 });
 
 test('hard mode is marked with an asterisk', () => {
   const game = play('crane', ['crane'], { hardMode: true });
-  assert.ok(buildShareText(game).startsWith('Quintle #42 1/6*'));
+  assert.ok(buildShareText(game).startsWith('Pentaword #42 1/6*'));
 });
 
 test('practice results share without a puzzle number', () => {
   const game = new Game({ mode: MODE.PRACTICE, answer: 'crane' });
   for (const letter of 'crane') game.addLetter(letter);
   game.submit();
-  assert.ok(buildShareText(game).startsWith('Quintle Practice 1/6'));
+  assert.ok(buildShareText(game).startsWith('Pentaword Practice 1/6'));
 });
