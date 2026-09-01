@@ -125,6 +125,7 @@ Manual runs let you set the name and code directly, and validate both.
 | Privacy policy URL | see step 5 |
 | Data safety answers | `docs/play-listing.md` |
 | Content rating questionnaire | `docs/play-listing.md` has the answers |
+| Data safety and Advertising ID | `docs/play-listing.md` — answers differ for an ad-free build |
 | Category | Games → Word |
 
 4. **Release → Testing → Closed testing** (or Internal testing first), create a
@@ -132,9 +133,11 @@ Manual runs let you set the name and code directly, and validate both.
 
 ## Step 5 — Publish the privacy policy
 
-Play requires a publicly reachable privacy policy URL even for an app that
-collects nothing. `docs/privacy-policy.html` is ready to host, and carries its
-own copy of the logo so it works standalone.
+Play requires a publicly reachable privacy policy URL. `docs/privacy-policy.html`
+is ready to host and carries its own copy of the logo so it works standalone. It
+describes the **ad-supported** app — if you publish an ad-free build first, say
+so accurately, and see the two-column Data safety table in
+`docs/play-listing.md`.
 
 In the repository, go to **Settings → Pages**, set the source to
 **Deploy from a branch**, branch `main`, folder `/docs`, and save. After a
@@ -159,6 +162,13 @@ production review.
 Once the requirement is satisfied: **Release → Production → Create new release**,
 promote the tested bundle, and submit for review. First reviews typically take a
 few days.
+
+## Before the first ad-supported release
+
+The AdMob SDK is not in the build yet. `docs/ADS.md` is the plan: account setup,
+the App ID meta-data (missing it crashes the app on launch), test ad units, the
+EEA consent flow, and the CI permission allowlist change. Work through its
+on-device checklist before shipping ads — none of it can be verified in CI.
 
 ## Releasing an update later
 

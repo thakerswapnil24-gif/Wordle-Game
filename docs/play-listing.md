@@ -59,10 +59,15 @@ BUILT TO BE COMFORTABLE
 - Works in portrait and landscape, on phones and tablets
 - Optional hard mode, where every hint you uncover must be reused
 
-COMPLETELY OFFLINE, COMPLETELY PRIVATE
-No account. No ads. No in-app purchases. No analytics. No internet connection
-needed. Your statistics never leave your device — they are not uploaded
-anywhere, because there is nowhere to upload them to.
+FREE, WITH NO STRINGS
+No account, no sign-up, no in-app purchases, no paywall. Pentaword is free and
+supported by ads, and every feature is available to everyone. The daily puzzle is
+never interrupted mid-game.
+
+YOUR PROGRESS STAYS YOURS
+Statistics and settings are stored on your device and are never uploaded — the
+game has no server to upload them to. The puzzles themselves work with no
+internet connection at all.
 
 Over 18,000 five-letter words are accepted as guesses — drawn from several
 English dictionaries so the game rarely rejects a word you know — while the
@@ -86,27 +91,40 @@ Profanity and slurs are excluded from both.
 
 ## Data safety form
 
-Google asks these on **Policy → App content → Data safety**. Pentaword makes no
-network requests at all, which makes every answer straightforward.
+Filed under **Policy → App content → Data safety**.
 
-| Question | Answer |
-| --- | --- |
-| Does your app collect or share any of the required user data types? | **No** |
-| Is all of the user data collected by your app encrypted in transit? | *(not applicable — no data is collected)* |
-| Do you provide a way for users to request that their data is deleted? | *(not applicable)* |
+> **These answers must describe the build you actually upload.** Under-declaring
+> is one of the most common causes of suspension, so if you publish an ad-free
+> build first (for example for early closed testing), file the *ad-free* column
+> and switch when the ads build goes out.
 
-Declare **no data collected** and **no data shared**. Statistics, settings and
-the game in progress are written to the app's own local storage, which Google
-does not count as collection because nothing is transmitted off the device.
+| Question | Ad-supported build | Ad-free build |
+| --- | --- | --- |
+| Does your app collect or share any required user data types? | **Yes** | No |
+| Data type collected | **Device or other IDs** → *Advertising ID* | — |
+| Is it shared with third parties? | **Yes** — with Google, for advertising | — |
+| Purpose | **Advertising or marketing**, and **Fraud prevention** | — |
+| Is collection optional or required? | **Required** (ads fund the app) | — |
+| Is data encrypted in transit? | **Yes** | — |
+| Can users request deletion? | **Yes** — resetting or deleting the advertising ID in Android Settings → Privacy → Ads | — |
 
-If asked to elaborate, this is accurate:
+Nothing else is collected in either case. Statistics, settings and the game in
+progress are written to the app's own local storage and never transmitted, which
+Google does not count as collection.
 
-> Pentaword stores your statistics, settings and current game in local storage
-> on your device. This information is never transmitted anywhere. The app makes
-> no network requests and contains no analytics, advertising or tracking
-> libraries.
+Note that the **advertising ID is the only** data type to declare. Do not tick
+Location: AdMob infers coarse region from the IP address, which Google's own
+guidance treats as part of the advertising data rather than a location
+permission, and the app requests no location permission.
 
----
+If asked to elaborate:
+
+> Pentaword stores your statistics, settings and current game in local storage on
+> your device; this is never transmitted. The app serves ads through Google
+> AdMob, which collects your device's advertising ID, IP address, device
+> information and ad interaction data in order to select and measure ads. The app
+> contains no analytics, and the developer receives only aggregate earnings
+> reports.
 
 ## Content rating questionnaire
 
@@ -122,20 +140,22 @@ Category: **Puzzle / Word game**. Expected outcome: **Everyone / PEGI 3**.
 | User-generated content or user interaction | No |
 | Does the app share the user's location? | No |
 | Does the app allow purchases? | No |
-| Does the app contain ads? | No |
+| Does the app contain ads? | **Yes** |
 
-Profanity and slurs are excluded from the guess list as well as the answer list,
-and the daily answers are further filtered to common, inoffensive words — see
-`tools/build-wordlists.mjs`. The app requests no permissions beyond INTERNET,
-makes no network requests, and contains no ads, purchases or tracking; see
-`docs/SECURITY.md`.
+
 
 ---
 
 ## Advertising ID
 
-**Policy → App content → Advertising ID:** answer **No**, the app does not use
-an advertising ID. The manifest declares no advertising permissions.
+**Policy → App content → Advertising ID:** answer **Yes**. The app uses the
+advertising ID, through Google AdMob, to select ads and cap how often the same
+ad is shown. Declare the purposes **Advertising or marketing** and **Fraud
+prevention**.
+
+The Ads SDK adds `com.google.android.gms.permission.AD_ID` to the merged
+manifest, which is what Play checks this answer against — a mismatch between the
+two is rejected at review.
 
 ## Government apps, financial features, health
 
@@ -143,8 +163,12 @@ All **No**.
 
 ## Target audience
 
-Suitable for all ages. If you select an audience that includes children under
-13, Google applies the Families policy — the app already complies (no ads, no
-data collection, no external links), but the questionnaire is longer. Selecting
-**13+** keeps the process simpler if you do not specifically want a children's
-audience.
+Select **13 and over**. The game's content suits all ages, but an audience that
+includes under-13s puts the app under Google's **Families policy**, which for an
+ad-supported app means: ads may only come from Families-certified ad networks,
+the advertising ID must not be used, interstitials are restricted, and the whole
+questionnaire is longer and stricter.
+
+If you ever do want a children's audience, the ad setup has to change first —
+see the Families note in `docs/ADS.md`. Do not tick it with the standard AdMob
+configuration in place.

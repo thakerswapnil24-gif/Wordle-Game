@@ -6,9 +6,15 @@ has. What follows is what remains, and what is done about it.
 
 ## The short version
 
-The app **cannot** reach the network, **cannot** read anything on your phone,
-and holds **no permission** that grants access to any device capability.
-Everything it needs is packaged inside the APK.
+The game is packaged entirely inside the APK and plays with no connection at
+all. It **cannot** read anything on your phone and holds **no permission** that
+grants access to any device capability.
+
+The app is ad-supported, so the Google Mobile Ads SDK does reach the network to
+fetch and measure ads, and does read the device's advertising ID. That is the
+one and only thing that leaves the device, it is declared in the privacy policy
+and the Play Data safety form, and it is not something this app's own code
+touches — no gameplay data is sent anywhere.
 
 ## Permissions
 
@@ -34,7 +40,8 @@ this way.
 
 ## Network
 
-The app makes no network requests. Three independent layers make that true:
+**The web layer — the game itself — cannot reach the network.** Ads run natively,
+outside it, so the boundary between the two is worth stating precisely.
 
 1. **Content Security Policy** (`index.html`) sets `connect-src 'self'`, so the
    page cannot open a connection to any other origin. `default-src 'self'` blocks
@@ -46,7 +53,17 @@ The app makes no network requests. Three independent layers make that true:
    bundled content.
 3. **Android network security config** refuses cleartext traffic entirely and
    trusts only the system certificate store, so a user-installed root
-   certificate cannot be used to intercept traffic the app might one day send.
+   certificate cannot be used to intercept the app's traffic.
+
+The Google Mobile Ads SDK renders in native views alongside the WebView, not
+inside it, so the CSP neither blocks it nor protects it — ad traffic is governed
+by the SDK and by the network security config above. This is also why an
+AdSense-style ad *inside* the WebView would not work here: `connect-src 'self'`
+would block it outright.
+
+Nothing the game itself computes — guesses, answers, statistics, settings — is
+ever transmitted. The SDK sends what is listed in the privacy policy and nothing
+from the game.
 
 `'unsafe-inline'` is unavoidable in `script-src` and `style-src`: Capacitor
 injects its native bridge as an inline `<script>`, and the board sets per-tile
@@ -74,10 +91,16 @@ left to the platform default. None of the backed-up data is sensitive.
 
 ## Dependencies
 
-The runtime dependency tree is Capacitor and four of its first-party plugins,
-and nothing else — no analytics SDK, no advertising SDK, no crash reporter, no
-font or asset CDN. `npm audit` runs in CI at `--audit-level=moderate` and fails
-the build on a vulnerable dependency.
+The runtime dependency tree is Capacitor, four of its first-party plugins, and
+the AdMob plugin — no analytics SDK, no crash reporter, no font or asset CDN.
+`npm audit` runs in CI at `--audit-level=moderate` and fails the build on a
+vulnerable dependency.
+
+The Ads SDK is the only third-party code with network access, and the only
+reason the app collects anything at all. It is deliberately the sole exception:
+if a future change wants to add analytics or crash reporting, that is a new
+declaration on the Data safety form and a new paragraph in the privacy policy,
+not a quiet dependency bump.
 
 The word lists are generated from public-domain and permissively licensed
 dictionaries; the generator is committed at `tools/build-wordlists.mjs` so the

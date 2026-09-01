@@ -18,6 +18,8 @@
     body { color: #edf0f7; background: #0e1015; }
     a { color: #8188f7; }
     .card { background: #171a22; border-color: #262b36; }
+    th { border-color: #262b36 !important; }
+    td { border-color: #262b36 !important; }
   }
   header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; }
   header img { width: 44px; height: 44px; border-radius: 13px; }
@@ -34,6 +36,9 @@
   }
   .updated { color: #5d6376; font-size: 0.875rem; }
   a { color: #5a5fe0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.94rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e0e4ee; vertical-align: top; }
+  th { font-weight: 650; }
 </style>
 </head>
 <body>
@@ -47,15 +52,17 @@
 </header>
 
 <div class="card">
-  <strong>Pentaword does not collect, transmit or share any personal
-  information.</strong> It has no accounts, no analytics, no advertising and no
-  servers. It works with no internet connection.
+  <strong>Pentaword is free and supported by advertising.</strong> The game itself
+  asks for nothing about you — no account, no sign-in, no personal details — and
+  your puzzle progress stays on your device. The ads are served by Google, and
+  Google collects some information in order to show and measure them. That is
+  set out in full below.
 </div>
 
-<h2>What the app stores</h2>
+<h2>What the game stores on your device</h2>
 <p>
-  Pentaword saves a small amount of information in your device's own local
-  storage so the game works the way you would expect between sessions:
+  Pentaword saves a small amount of information in your device's own storage so
+  the game works the way you would expect between sessions:
 </p>
 <ul>
   <li>your statistics — games played, wins, streaks and guess distribution;</li>
@@ -63,28 +70,74 @@
   <li>the puzzle you currently have in progress.</li>
 </ul>
 <p>
-  This information stays on your device. It is not uploaded, backed up to us, or
-  made available to anyone, because the app has no server component to send it
-  to. Uninstalling the app deletes it. You can also clear it at any time through
-  your device's app storage settings.
+  This information stays on your device. It is not uploaded to us or made
+  available to anyone — we operate no server and have nowhere to send it.
+  Uninstalling the app deletes it, and you can clear it at any time through your
+  device's app storage settings.
 </p>
+
+<h2>Advertising</h2>
+<p>
+  Ads are provided by <strong>Google AdMob</strong>. To select and measure them,
+  Google collects information from this app, including:
+</p>
+<table>
+  <tr><th>What</th><th>Why</th></tr>
+  <tr><td>Your device's advertising ID</td><td>To select ads and limit how often you see the same one</td></tr>
+  <tr><td>IP address and approximate location derived from it</td><td>To serve ads relevant to your country or region</td></tr>
+  <tr><td>Device and app information — model, operating system version, app version</td><td>To render ads correctly and detect invalid traffic</td></tr>
+  <tr><td>Ad interaction data — ads shown, tapped or completed</td><td>To measure performance and pay for the app</td></tr>
+</table>
+<p>
+  Google acts as an independent controller of this information. How it is used is
+  governed by
+  <a href="https://policies.google.com/privacy">Google's Privacy Policy</a> and by
+  <a href="https://policies.google.com/technologies/partner-sites">How Google uses
+  information from sites or apps that use our services</a>. We receive only
+  aggregate, non-identifying earnings reports — we never see who you are, and we
+  cannot connect an ad to a particular player.
+</p>
+
+<h2>Your choices about ads</h2>
+<ul>
+  <li>
+    <strong>In the European Economic Area, the United Kingdom and Switzerland</strong>,
+    the app asks for your consent before personalised ads are shown, using
+    Google's consent framework. You can change your choice at any time from the
+    app's Settings screen.
+  </li>
+  <li>
+    <strong>On any device</strong>, you can reset or delete your advertising ID in
+    Android <em>Settings → Privacy → Ads</em>. Deleting it stops ads being
+    personalised to you. You will still see ads; they will simply be less
+    relevant.
+  </li>
+  <li>
+    Declining personalised ads does not restrict the game. Every feature stays
+    available, and nothing is withheld.
+  </li>
+</ul>
 
 <h2>What the app does not do</h2>
 <ul>
   <li>It does not create an account or ask for any personal details.</li>
-  <li>It does not use analytics, crash reporting or advertising libraries.</li>
-  <li>It does not use an advertising identifier.</li>
+  <li>It does not use analytics or crash-reporting services.</li>
   <li>It does not request your location, contacts, camera, microphone or files.</li>
-  <li>It does not contain in-app purchases.</li>
-  <li>It makes no network requests. All of its content ships inside the app.</li>
+  <li>It contains no in-app purchases.</li>
+  <li>It does not sell your personal information.</li>
 </ul>
+<p>
+  Apart from loading ads, the game makes no network requests: the words, the
+  puzzles and everything else ship inside the app. Pentaword remains fully
+  playable with no internet connection — you simply will not see ads.
+</p>
 
 <h2>Sharing your result</h2>
 <p>
   The share button hands a short block of text — a grid of coloured squares and
-  your score — to your device's own share sheet or clipboard. You choose where
-  it goes. Pentaword does not send it anywhere itself, and the text never
-  contains the answer or the words you guessed.
+  your score — to your device's own share sheet or clipboard. You choose where it
+  goes. Pentaword does not send it anywhere itself, and the text never contains
+  the answer or the words you guessed.
 </p>
 
 <h2>Android backup</h2>
@@ -99,14 +152,18 @@
 
 <h2>Children</h2>
 <p>
-  Pentaword is suitable for all ages. Because it collects no data whatsoever, it
-  collects none from children either.
+  Pentaword is not directed to children under 13 and we do not knowingly collect
+  information from them. If you believe a child has used the app and you would
+  like the advertising identifier associated with their device reset, delete it
+  in Android <em>Settings → Privacy → Ads</em>, which removes the identifier
+  Google uses.
 </p>
 
 <h2>Changes to this policy</h2>
 <p>
-  If this policy ever changes, the revised version will be published at this
-  address with a new date at the top.
+  If this policy changes, the revised version will be published at this address
+  with a new date at the top. Material changes to what is collected will be
+  reflected here before the version making the change is released.
 </p>
 
 <h2>Contact</h2>

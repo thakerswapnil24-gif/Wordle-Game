@@ -85,18 +85,24 @@ deletes.
 - **High-contrast palette** — blue/orange tiles for colour-vision deficiency.
 - **Accessibility** — full keyboard operation, ARIA labels on every tile and key,
   live-region announcements of each result, and `prefers-reduced-motion` support.
-- **Offline-friendly and private** — statistics, settings and the game in
-  progress are stored in `localStorage`; nothing is sent anywhere. If the browser
-  blocks storage, the game still plays and says so.
+- **Offline-friendly** — the puzzles, words and everything else ship inside the
+  app, so it plays with no connection. Statistics and settings live in
+  `localStorage` and are never uploaded. If the browser blocks storage, the game
+  still plays and says so.
 
 ## Security
 
-The app cannot reach the network, holds no permission that grants access to any
-device capability, and stores nothing off the device. A Content Security Policy
-blocks outbound connections, the Android network security config refuses
-cleartext traffic, and CI fails the build if the merged manifest ever declares a
-permission other than `INTERNET`. Profanity and slurs are filtered from both word
-lists. See [docs/SECURITY.md](docs/SECURITY.md) for the detail.
+The game holds no permission that grants access to any device capability, and
+nothing it computes leaves the device. A Content Security Policy stops the web
+layer opening any outbound connection, the Android network security config
+refuses cleartext traffic, and CI fails the build if the merged manifest declares
+a permission outside a reviewed allowlist. Profanity and slurs are filtered from
+both word lists.
+
+The Android build is ad-supported, and the Google Mobile Ads SDK is the one
+component that reaches the network and reads the advertising ID — declared in the
+privacy policy and the Play Data safety form. See
+[docs/SECURITY.md](docs/SECURITY.md) and [docs/ADS.md](docs/ADS.md).
 
 ## Project structure
 
