@@ -14,9 +14,12 @@ import { rejectionReason } from './dictionary.js';
 export class Game {
   /**
    * @param {{mode: string, answer: string, puzzleNumber?: number|null,
-   *          guesses?: string[], hardMode?: boolean, recorded?: boolean}} options
+   *          guesses?: string[], hardMode?: boolean, recorded?: boolean,
+   *          hints?: number[]}} options
    */
-  constructor({ mode, answer, puzzleNumber = null, guesses = [], hardMode = false, recorded = false }) {
+  constructor({
+    mode, answer, puzzleNumber = null, guesses = [], hardMode = false, recorded = false, hints = [],
+  }) {
     if (!answer || answer.length !== WORD_LENGTH) {
       throw new RangeError(`answer must be ${WORD_LENGTH} letters`);
     }
@@ -27,6 +30,15 @@ export class Game {
     /** Set once the result has been folded into the statistics, so that
      *  reloading a finished puzzle never counts it twice. */
     this.recorded = Boolean(recorded);
+    /**
+     * Positions revealed by a hint, as indices into the answer.
+     *
+     * Recorded per game, and counted in the statistics, from the day hints
+     * exist — even though a hinted win currently counts exactly like any other.
+     * Storing it costs nothing now and means the rule can be tightened later
+     * without a player's recorded history becoming a lie.
+     */
+    this.hints = [...new Set(hints)].filter((i) => Number.isInteger(i) && i >= 0 && i < WORD_LENGTH);
     this.guesses = [];
     this.draft = '';
     this.status = STATUS.PLAYING;
@@ -49,6 +61,55 @@ export class Game {
 
   get guessCount() {
     return this.guesses.length;
+  }
+
+  /** Whether any letter in this game was revealed rather than deduced. */
+  get usedHint() {
+    return this.hints.length > 0;
+  }
+
+  /**
+   * Positions a hint could still usefully reveal: not already solved by a green
+   * tile, and not already hinted.
+   */
+  get hintablePositions() {
+    const solved = new Set(this.hints);
+    for (const guess of this.guesses) {
+      for (let i = 0; i < WORD_LENGTH; i += 1) {
+        if (guess[i] === this.answer[i]) solved.add(i);
+      }
+    }
+    const open = [];
+    for (let i = 0; i < WORD_LENGTH; i += 1) if (!solved.has(i)) open.push(i);
+    return open;
+  }
+
+  /** Whether a hint would tell the player anything they do not already know. */
+  get canHint() {
+    return !this.isOver && this.hintablePositions.length > 0;
+  }
+
+  /** The letters revealed so far, as a sparse row for display. */
+  get hintRow() {
+    return Array.from({ length: WORD_LENGTH }, (_, i) => (
+      this.hints.includes(i) ? this.answer[i] : ''
+    ));
+  }
+
+  /**
+   * Reveal one unsolved letter.
+   *
+   * Chosen at random among the positions the player has not worked out, so a
+   * second hint cannot be predicted from the first.
+   *
+   * @returns {{index: number, letter: string}|null} null when nothing is left to reveal
+   */
+  revealHint() {
+    const open = this.hintablePositions;
+    if (this.isOver || open.length === 0) return null;
+    const index = open[Math.floor(Math.random() * open.length)];
+    this.hints.push(index);
+    return { index, letter: this.answer[index] };
   }
 
   /** Scored states for every submitted guess. */
@@ -145,6 +206,7 @@ export class Game {
       guesses: this.guesses,
       hardMode: this.hardMode,
       recorded: this.recorded,
+      hints: this.hints,
       status: this.status,
     };
   }
@@ -166,6 +228,7 @@ export function reviveGame(raw, { mode, expectedAnswer = null, expectedPuzzle = 
   if (expectedPuzzle !== null && raw.puzzleNumber !== expectedPuzzle) return null;
 
   if (raw.guesses !== undefined && !Array.isArray(raw.guesses)) return null;
+  if (raw.hints !== undefined && !Array.isArray(raw.hints)) return null;
   const guesses = raw.guesses ?? [];
   if (guesses.length > MAX_GUESSES) return null;
   if (!guesses.every((g) => typeof g === 'string' && /^[a-z]{5}$/.test(g))) return null;
@@ -178,6 +241,7 @@ export function reviveGame(raw, { mode, expectedAnswer = null, expectedPuzzle = 
       guesses,
       hardMode: Boolean(raw.hardMode),
       recorded: Boolean(raw.recorded),
+      hints: raw.hints ?? [],
     });
   } catch {
     return null;

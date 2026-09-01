@@ -186,3 +186,73 @@ test('corrupt stored data is discarded rather than crashing', () => {
     assert.equal(reviveGame(raw, { mode: MODE.DAILY }), null, JSON.stringify(raw));
   }
 });
+
+/* ------------------------------- hints ------------------------------------ */
+
+test('a hint reveals a letter the player has not worked out', () => {
+  const game = newGame();
+  assert.equal(game.canHint, true);
+  const hint = game.revealHint();
+  assert.ok(hint, 'a fresh game always has something to reveal');
+  assert.equal(hint.letter, 'crane'[hint.index]);
+  assert.deepEqual(game.hints, [hint.index]);
+  assert.equal(game.usedHint, true);
+});
+
+test('hints never re-reveal a letter already solved by a green tile', () => {
+  const game = newGame();
+  type(game, 'canoe'); // C and E land green
+  game.submit();
+  const solved = [0, 4];
+  for (let i = 0; i < 3; i += 1) {
+    const hint = game.revealHint();
+    if (!hint) break;
+    assert.ok(!solved.includes(hint.index), `position ${hint.index} was already known`);
+  }
+});
+
+test('hints never repeat a position', () => {
+  const game = newGame();
+  const seen = new Set();
+  let hint = game.revealHint();
+  while (hint) {
+    assert.ok(!seen.has(hint.index), 'a position was revealed twice');
+    seen.add(hint.index);
+    hint = game.revealHint();
+  }
+  assert.equal(seen.size, WORD_LENGTH);
+  assert.equal(game.canHint, false, 'nothing left to reveal');
+});
+
+test('a finished game gives no more hints', () => {
+  const game = type(newGame(), 'crane');
+  game.submit();
+  assert.equal(game.canHint, false);
+  assert.equal(game.revealHint(), null);
+});
+
+test('the hint row shows revealed letters in place', () => {
+  const game = newGame();
+  const { index, letter } = game.revealHint();
+  const row = game.hintRow;
+  assert.equal(row.length, WORD_LENGTH);
+  assert.equal(row[index], letter);
+  assert.equal(row.filter(Boolean).length, 1);
+});
+
+test('hints survive being saved and restored', () => {
+  const game = newGame({ mode: MODE.DAILY, puzzleNumber: 5 });
+  game.revealHint();
+  game.revealHint();
+  const revived = reviveGame(JSON.parse(JSON.stringify(game)), { mode: MODE.DAILY });
+  assert.deepEqual(revived.hints, game.hints);
+  assert.equal(revived.usedHint, true);
+});
+
+test('corrupt hint data is rejected rather than trusted', () => {
+  const raw = JSON.parse(JSON.stringify(newGame({ mode: MODE.DAILY })));
+  assert.equal(reviveGame({ ...raw, hints: 'lots' }, { mode: MODE.DAILY }), null);
+  // Out-of-range indices are dropped rather than failing the whole save.
+  const revived = reviveGame({ ...raw, hints: [0, 99, -1, 2, 2] }, { mode: MODE.DAILY });
+  assert.deepEqual(revived.hints, [0, 2]);
+});

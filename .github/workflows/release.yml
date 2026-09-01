@@ -81,6 +81,21 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Refuse to release with test ad units
+        run: |
+          # Google's test units must never reach a release. Tapping your own
+          # live ads is invalid traffic, so development uses test inventory —
+          # and the only reliable way to stop it shipping is to make the release
+          # itself impossible until the real IDs are in place.
+          if grep -q 'ca-app-pub-3940256099942544' src/js/ads/config.js; then
+            echo "::error::src/js/ads/config.js still holds Google's test ad unit IDs. Replace all three with your own before releasing — see docs/ADS.md."
+            exit 1
+          fi
+          if grep -q 'ca-app-pub-3940256099942544' android/app/src/main/AndroidManifest.xml; then
+            echo "::error::The manifest still holds the sample AdMob application ID. Replace it with your own before releasing — see docs/ADS.md."
+            exit 1
+          fi
+
       - name: Sync web assets into the Android project
         run: npm run sync:android
 

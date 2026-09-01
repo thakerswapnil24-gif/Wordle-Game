@@ -45,7 +45,10 @@ export function buildShareText(game, options = {}) {
   const score = game.status === STATUS.WON ? `${game.guessCount}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
   const label = game.mode === MODE.DAILY ? `#${game.puzzleNumber}` : 'Practice';
   const hard = game.hardMode ? '*' : '';
-  return `${BRAND.name} ${label} ${score}${hard}\n\n${buildGrid(game, options)}`;
+  // A revealed letter is marked so a shared result is never quietly flattering.
+  // It says a hint was used, not which letter — the grid stays spoiler-free.
+  const hint = game.usedHint ? ' \u{1F4A1}' : '';
+  return `${BRAND.name} ${label} ${score}${hard}${hint}\n\n${buildGrid(game, options)}`;
 }
 
 /**

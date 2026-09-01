@@ -112,3 +112,27 @@ test('unusable stored statistics are rejected outright', () => {
     assert.equal(reviveStats(raw), null);
   }
 });
+
+test('hinted wins are counted separately from the win itself', () => {
+  // The current rule is that a hinted win counts normally. Recording it anyway
+  // is what keeps that rule reversible.
+  let stats = applyResult(emptyStats(), { won: true, guessCount: 3, usedHint: true });
+  assert.equal(stats.wins, 1);
+  assert.equal(stats.currentStreak, 1, 'a hint does not break the streak today');
+  assert.equal(stats.distribution[2], 1);
+  assert.equal(stats.hintedWins, 1);
+
+  stats = applyResult(stats, { won: true, guessCount: 3 });
+  assert.equal(stats.wins, 2);
+  assert.equal(stats.hintedWins, 1, 'an unhinted win does not add to the hinted count');
+});
+
+test('a hinted loss adds nothing to the hinted win count', () => {
+  const stats = applyResult(emptyStats(), { won: false, guessCount: 6, usedHint: true });
+  assert.equal(stats.hintedWins, 0);
+});
+
+test('stored hinted-win counts are repaired like every other figure', () => {
+  assert.equal(reviveStats({ hintedWins: -3 }).hintedWins, 0);
+  assert.equal(reviveStats({ hintedWins: 4 }).hintedWins, 4);
+});

@@ -29,6 +29,21 @@
 
         </activity>
 
+        <!--
+            AdMob application ID.
+
+            This is Google's public *sample* ID. It must be replaced with the
+            one from your own AdMob account before release — and it must be
+            present and well formed either way: the Ads SDK throws during
+            initialisation if this meta-data is missing, which crashes the app
+            on launch before anything renders.
+
+            The ID is not a secret; it is readable in any published APK.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

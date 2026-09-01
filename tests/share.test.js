@@ -58,3 +58,18 @@ test('practice results share without a puzzle number', () => {
   game.submit();
   assert.ok(buildShareText(game).startsWith('Pentaword Practice 1/6'));
 });
+
+test('a hinted result is marked, without revealing which letter', () => {
+  const game = play('crane', ['audio']);
+  game.revealHint();
+  for (const letter of 'crane') game.addLetter(letter);
+  game.submit();
+  const text = buildShareText(game);
+  assert.ok(text.includes('\u{1F4A1}'), 'the result should say a hint was used');
+  assert.equal(text.toLowerCase().includes('crane'), false, 'still no answer in the share text');
+});
+
+test('an unhinted result carries no hint marker', () => {
+  const game = play('crane', ['crane']);
+  assert.equal(buildShareText(game).includes('\u{1F4A1}'), false);
+});
