@@ -96,9 +96,17 @@ artifact. Inside is `app-release.aab` — that is the file you upload to Play.
 > secret is missing, and verifies a signature block is present before uploading
 > the artifact.
 
-**Version numbers.** Play requires `versionCode` to increase with every upload.
-Tags map to it automatically: `v1.0.0` → `10000`, `v1.2.3` → `10203`. Manual
-runs let you set it directly.
+**Version numbers.** Play requires `versionCode` to increase with every upload,
+and a code that has been used can never be reused. Tags map to it automatically:
+`v1.0.0` → `10000`, `v1.2.3` → `10203`.
+
+The tag must be exactly three numeric parts, and **minor and patch must each stay
+below 100** — otherwise `v1.0.100` and `v1.1.0` would both produce `10100` and
+Play would reject the second upload as a duplicate. Anything else (`v1.2`,
+`v1.2.3-beta`) is refused with a clear message rather than being guessed at; see
+`tools/version-code.sh`, which is covered by `tests/version-code.test.js`.
+
+Manual runs let you set the name and code directly, and validate both.
 
 ## Step 4 — Create the app in the Play Console
 
