@@ -197,13 +197,26 @@ a GDPR exposure. This is not optional and it is not something to add later.
 ### 6. The CI permission gate — already updated
 
 `.github/workflows/ci.yml` fails the build on any permission outside a reviewed
-allowlist. The Ads SDK's manifest merge adds two, both now on the list:
+allowlist. The Ads SDK's manifest merge adds **eight**, all now on the list:
 
-- `android.permission.ACCESS_NETWORK_STATE` — so the SDK can skip requesting ads
-  with no connection. Not a runtime permission.
-- `com.google.android.gms.permission.AD_ID` — reads the resettable advertising
-  ID. This is what the Play Console's Advertising ID declaration is checked
-  against; the two must agree.
+| Permission | What it is for |
+| --- | --- |
+| `ACCESS_NETWORK_STATE` | Skip requesting an ad with no connection |
+| `AD_ID` | Read the resettable advertising ID |
+| `ACCESS_ADSERVICES_AD_ID` | Android Privacy Sandbox |
+| `ACCESS_ADSERVICES_ATTRIBUTION` | Privacy Sandbox conversion measurement |
+| `ACCESS_ADSERVICES_TOPICS` | Privacy Sandbox interest signals |
+| `FOREGROUND_SERVICE` | Let a video ad finish playing |
+| `WAKE_LOCK` | Stop the device sleeping mid-ad |
+| `INTERNET` | Already present for Capacitor's local server |
+
+Every one is normal protection level — no runtime prompt, no access to personal
+data on the device.
+
+Worth noting how this went: the plan written before the SDK was added predicted
+two of these. The build failed on the other five, which is exactly what the gate
+is for. If a future SDK version brings a ninth, the build will fail again —
+read what it is and why before allowing it.
 
 They are listed one by one on purpose. **Do not weaken the check to a pattern
 match** — the whole value of the gate is that a permission cannot arrive

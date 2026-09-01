@@ -12,31 +12,54 @@ grants access to any device capability.
 
 The app is ad-supported, so the Google Mobile Ads SDK does reach the network to
 fetch and measure ads, and does read the device's advertising ID. That is the
-one and only thing that leaves the device, it is declared in the privacy policy
-and the Play Data safety form, and it is not something this app's own code
-touches — no gameplay data is sent anywhere.
+only thing that leaves the device, it is declared in the privacy policy and the
+Play Data safety form, and no gameplay data is sent anywhere — not a guess, not
+a statistic, not a setting.
 
 ## Permissions
 
-The app declares two permissions, neither of which grants access to any device
-capability and neither of which is ever prompted for:
+The app declares nine permissions. **Every one is "normal" protection level:**
+none is a runtime permission, none is ever prompted for, and none grants access
+to any personal data on the device.
 
-| Permission | Why |
-| --- | --- |
-| `android.permission.INTERNET` | Capacitor serves the bundled web assets over an in-process `https://localhost` server. INTERNET is not a runtime permission and grants no access to anything on the device. |
-| `<package>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Generated automatically by AndroidX Core for its own use of `registerReceiver`. It is signature-level and namespaced under this app's own package, so no other app can ever hold it, and it protects nothing but an internal broadcast. |
+| Permission | Why | Declared by |
+| --- | --- | --- |
+| `INTERNET` | Capacitor's in-process `https://localhost` server; the Ads SDK fetching ads | app + SDK |
+| `ACCESS_NETWORK_STATE` | Lets the Ads SDK skip requesting an ad when there is no connection | Ads SDK |
+| `AD_ID` | Reads the resettable advertising ID. This is what the Play Console's Advertising ID declaration is checked against | Ads SDK |
+| `ACCESS_ADSERVICES_AD_ID` | Android Privacy Sandbox | Ads SDK |
+| `ACCESS_ADSERVICES_ATTRIBUTION` | Privacy Sandbox — conversion measurement without cross-app identifiers | Ads SDK |
+| `ACCESS_ADSERVICES_TOPICS` | Privacy Sandbox — interest signals the platform computes on the device | Ads SDK |
+| `FOREGROUND_SERVICE` | So a video ad can finish playing | Ads SDK |
+| `WAKE_LOCK` | So the device does not sleep mid-ad | Ads SDK |
+| `<applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | AndroidX Core's own `registerReceiver`. Signature level, namespaced to this app, protects nothing but an internal broadcast | AndroidX |
 
-There is no access to storage, camera, microphone, location, contacts, calendar,
-phone state, SMS, Bluetooth or nearby devices — none of these are declared, so
-the platform will not grant them.
+Eight of the nine arrive through the Google Mobile Ads SDK's manifest merge
+rather than from anything this app asks for.
+
+The Privacy Sandbox trio is worth understanding rather than fearing: those APIs
+exist so ad selection and measurement can use signals the platform computes on
+the device, instead of a device-wide identifier. They are the more private path,
+not a less private one. They can be stripped with `tools:node="remove"` if you
+would rather forgo them — at some cost to ad revenue, and with no way to confirm
+the SDK still behaves without testing on a device.
+
+There is still no access to storage, camera, microphone, location, contacts,
+calendar, phone state, SMS, Bluetooth or nearby devices — none of these are
+declared, so the platform will not grant them.
 
 This is enforced, not just documented: CI reads the permissions out of the
-**merged** manifest of the built APK and fails if the set is anything other than
-those two exactly. The package-scoped name is derived from the APK rather than
+**merged** manifest of the built APK and fails on anything outside the
+allowlist. The package-scoped name is derived from the APK rather than
 pattern-matched, so the check cannot be satisfied by an unrelated permission
-that happens to look similar. A dependency that quietly adds a permission breaks
-the build — this is not hypothetical; the AndroidX permission above was found
-this way.
+that happens to look similar.
+
+The gate has now caught two rounds of additions nobody predicted: the AndroidX
+receiver permission, and five of the Ads SDK's eight — `FOREGROUND_SERVICE`,
+`WAKE_LOCK` and the three Privacy Sandbox entries were not in the plan written
+before the SDK was added. Each was reviewed and allowed deliberately. That is
+the gate working, and the reason it is a list of exact names rather than a
+pattern.
 
 ## Network
 
