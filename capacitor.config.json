@@ -2,6 +2,11 @@
   "appId": "io.github.thakerswapnil24.pentaword",
   "appName": "Pentaword",
   "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false,
+    "allowNavigation": []
+  },
   "android": {
     "adjustMarginsForEdgeToEdge": "auto",
     "allowMixedContent": false,

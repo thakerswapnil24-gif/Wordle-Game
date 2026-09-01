@@ -89,6 +89,15 @@ deletes.
   progress are stored in `localStorage`; nothing is sent anywhere. If the browser
   blocks storage, the game still plays and says so.
 
+## Security
+
+The app cannot reach the network, holds no permission that grants access to any
+device capability, and stores nothing off the device. A Content Security Policy
+blocks outbound connections, the Android network security config refuses
+cleartext traffic, and CI fails the build if the merged manifest ever declares a
+permission other than `INTERNET`. Profanity and slurs are filtered from both word
+lists. See [docs/SECURITY.md](docs/SECURITY.md) for the detail.
+
 ## Project structure
 
 ```

@@ -64,9 +64,10 @@ No account. No ads. No in-app purchases. No analytics. No internet connection
 needed. Your statistics never leave your device — they are not uploaded
 anywhere, because there is nowhere to upload them to.
 
-A curated dictionary of nearly 16,000 words decides what counts as a valid
-guess, and the daily answers are drawn from a hand-reviewed list of common,
-inoffensive English words.
+Over 18,000 five-letter words are accepted as guesses — drawn from several
+English dictionaries so the game rarely rejects a word you know — while the
+daily answers come from a hand-reviewed list of common, inoffensive words.
+Profanity and slurs are excluded from both.
 ```
 
 ## Category and tags
@@ -123,8 +124,11 @@ Category: **Puzzle / Word game**. Expected outcome: **Everyone / PEGI 3**.
 | Does the app allow purchases? | No |
 | Does the app contain ads? | No |
 
-The word lists exclude profanity, and the daily answer list is further filtered
-to common, inoffensive words — see `tools/build-wordlists.mjs`.
+Profanity and slurs are excluded from the guess list as well as the answer list,
+and the daily answers are further filtered to common, inoffensive words — see
+`tools/build-wordlists.mjs`. The app requests no permissions beyond INTERNET,
+makes no network requests, and contains no ads, purchases or tracking; see
+`docs/SECURITY.md`.
 
 ---
 

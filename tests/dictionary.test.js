@@ -103,3 +103,57 @@ test('practice words are real answers and never repeat the previous one', () => 
     assert.notEqual(word, 'crane');
   }
 });
+
+/* --------------------------- safety of the lists -------------------------- */
+
+test('the dictionary is exhaustive enough to accept ordinary words', () => {
+  // Words a player would reasonably try, drawn from across the range of what
+  // "five-letter English word" covers: everyday, modern, informal, and awkward.
+  const shouldAccept = [
+    'crane', 'audio', 'ghost', 'quilt', 'pizza', 'zebra', 'jazzy', 'fjord',
+    'vodka', 'yacht', 'detox', 'decaf', 'chemo', 'carbs', 'ditzy', 'vibes',
+    'pixie', 'squid', 'nymph', 'glyph', 'crypt', 'lymph', 'wharf', 'quirk',
+    'axiom', 'zesty', 'oxide', 'jumbo', 'kayak', 'llama', 'onion', 'plaza',
+  ];
+  const rejected = shouldAccept.filter((w) => !isValidWord(w));
+  assert.deepEqual(rejected, [], `these should be valid guesses: ${rejected}`);
+});
+
+test('the guess list is large enough to cover the language', () => {
+  // Free English dictionaries land between roughly 8,000 and 16,000 five-letter
+  // words each; the shipped list unions several, so it should clear all of them.
+  assert.ok(validWordCount > 17_000, `only ${validWordCount} words`);
+});
+
+test('obvious non-words are still rejected', () => {
+  for (const word of ['zzzzz', 'qqqqq', 'aeiou', 'xkcdq', 'bnmzx']) {
+    assert.ok(!isValidWord(word), `${word} should not be a valid guess`);
+  }
+});
+
+test('profanity is excluded from guesses as well as answers', () => {
+  // A small, deliberately mild sample of terms present in the source
+  // dictionaries and filtered out on the way in. If the profanity filter is
+  // ever dropped, these come back and this test catches it.
+  for (const word of ['bitch', 'penis', 'boobs', 'shite', 'twats', 'shits']) {
+    assert.ok(!isValidWord(word), `${word} must not be accepted`);
+  }
+});
+
+test('filtering profanity does not take ordinary words with it', () => {
+  // These all begin with a profane substring. A stem-matching filter would
+  // reject every one of them, which is why the exclusions are an explicit list.
+  for (const word of ['title', 'titan', 'tithe', 'asset', 'assay', 'spice', 'spicy', 'cumin', 'butte', 'cocky']) {
+    assert.ok(isValidWord(word), `${word} must remain a valid guess`);
+  }
+});
+
+test('no answer is a proper noun that slipped through curation', () => {
+  // A regression guard for names, places and brands the frequency corpus
+  // contains in lowercase. `niger` matters most: a country name one letter from
+  // a slur, which the wider dictionary admitted until it was blocklisted.
+  const answers = new Set(ANSWERS);
+  for (const word of ['niger', 'linux', 'emacs', 'texas', 'japan', 'aaron', 'honda']) {
+    assert.ok(!answers.has(word), `${word} must not be a puzzle answer`);
+  }
+});
