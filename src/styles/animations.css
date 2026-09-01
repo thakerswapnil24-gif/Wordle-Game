@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Pentaword — motion
+   ========================================================================== */
+
+/* Typing a letter: a quick, confident pop. */
+@keyframes tile-pop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+
+.tile--pop { animation: tile-pop 130ms var(--ease-out); }
+
+/* Revealing a guess: the tile turns on its horizontal axis, and the colour is
+   swapped by JS while it is edge-on. */
+@keyframes tile-flip {
+  0%   { transform: rotateX(0deg); }
+  50%  { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.tile--flip {
+  animation: tile-flip var(--flip-duration) var(--ease-out) both;
+  animation-delay: var(--flip-delay, 0ms);
+}
+
+/* Winning row: a staggered hop. */
+@keyframes tile-win {
+  0%, 100% { transform: translateY(0); }
+  28%      { transform: translateY(-26%) scale(1.03); }
+  55%      { transform: translateY(4%); }
+  76%      { transform: translateY(-8%); }
+}
+
+.tile--win {
+  animation: tile-win 640ms var(--ease-spring) both;
+  animation-delay: var(--bounce-delay, 0ms);
+}
+
+/* Rejected guess: a tight horizontal shake. */
+@keyframes row-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+.board__row--shake { animation: row-shake 560ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+/* Keyboard hint settling in. */
+@keyframes key-reveal {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.key--reveal { animation: key-reveal 240ms var(--ease-out); }
+
+/* Board entrance when switching modes or starting a new word. */
+@keyframes board-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.board--enter { animation: board-enter 300ms var(--ease-out) both; }
+
+/* Toasts and dialogs. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(-8px) scale(0.97); }
+}
+
+.toast--leaving { animation: toast-out 180ms var(--ease-out) forwards; }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes modal-out {
+  to { opacity: 0; transform: translateY(8px) scale(0.985); }
+}
+
+/* Respect the platform accessibility setting: keep state changes, drop the
+   movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

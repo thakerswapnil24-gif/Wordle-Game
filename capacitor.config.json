@@ -1,0 +1,23 @@
+{
+  "appId": "io.github.thakerswapnil24.pentaword",
+  "appName": "Pentaword",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#F6F7FB"
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": false
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 2000,
+      "showSpinner": false,
+      "backgroundColor": "#F6F7FB"
+    }
+  }
+}

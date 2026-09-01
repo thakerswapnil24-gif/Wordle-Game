@@ -1,0 +1,205 @@
+/* ==========================================================================
+   Pentaword — page structure
+   ========================================================================== */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 640px;
+  margin-inline: auto;
+  padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Header ----------------------------------------------------------------- */
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--topbar-height);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  box-shadow: var(--shadow-sm);
+  flex: none;
+}
+
+.brand__name {
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+
+/* Mode switch ------------------------------------------------------------ */
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 6px;
+}
+
+.modes__switch {
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  isolation: isolate;
+}
+
+.modes__tab {
+  position: relative;
+  z-index: 1;
+  min-width: 92px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
+  transition: color 180ms var(--ease-out);
+}
+
+.modes__tab--active { color: var(--text); }
+
+.modes__thumb {
+  position: absolute;
+  z-index: 0;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 260ms var(--ease-spring);
+}
+
+.modes__switch[data-active='practice'] .modes__thumb { transform: translateX(100%); }
+
+.modes__caption {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  min-height: 1.2em;
+}
+
+/* Playfield -------------------------------------------------------------- */
+
+.play {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0 10px;
+}
+
+/* Footer / keyboard ------------------------------------------------------ */
+
+.footer {
+  flex: none;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding-top: 4px;
+}
+
+/* Boot / no-JS fallback -------------------------------------------------- */
+
+.fallback {
+  max-width: 30rem;
+  margin: 12vh auto;
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.fallback h1 { font-size: 1.25rem; margin-bottom: 10px; }
+.fallback p { color: var(--text-muted); margin-bottom: 10px; }
+.fallback__code {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  background: var(--surface-2);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin: 0 0 10px;
+}
+
+@media (min-width: 480px) {
+  :root { --tile-gap: 8px; --key-gap: 7px; }
+}
+
+/* --------------------------------------------------------------------------
+   Short landscape (phones turned sideways, and foldables).
+
+   A 5x6 grid stacked above a keyboard needs height, which a landscape phone
+   does not have. Rather than shrink everything into illegibility, the board and
+   the keyboard sit side by side and each takes the full height available.
+   Tablets keep the portrait-style layout: they are tall enough, and Android 16
+   ignores orientation locks on large screens anyway.
+   -------------------------------------------------------------------------- */
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    /* The two flexible rows are empty spacers: they centre the mode switch and
+       keyboard as one group beside the board, rather than pinning the switch to
+       the top and stranding the keyboard in the middle. */
+    grid-template-rows: auto minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'top  top'
+      'play .'
+      'play modes'
+      'play keys'
+      'play .';
+    column-gap: clamp(10px, 3vw, 28px);
+    max-width: 900px;
+  }
+
+  .topbar { grid-area: top; min-height: 46px; }
+  .play { grid-area: play; padding: 8px 0; }
+  .modes { grid-area: modes; padding: 6px 0 2px; }
+  .footer { grid-area: keys; align-self: center; padding-top: 0; }
+
+  .key { height: clamp(38px, 13dvh, 52px); }
+  .modes__caption { display: none; }
+}
+
+/* Very short landscape: reclaim the last of the vertical space. */
+@media (orientation: landscape) and (max-height: 400px) {
+  .topbar { min-height: 40px; }
+  .brand__name { font-size: 1.1rem; }
+  .modes { padding: 2px 0 0; }
+  .modes__tab { padding: 4px 12px; min-width: 78px; font-size: 0.8rem; }
+}

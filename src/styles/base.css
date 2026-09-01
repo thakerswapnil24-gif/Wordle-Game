@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Pentaword — design tokens, reset and typography
+   ========================================================================== */
+
+:root {
+  /* Type ---------------------------------------------------------------- */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Geometry ------------------------------------------------------------ */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --tile-gap: 6px;
+  --tile-size: 62px;
+  --key-gap: 6px;
+  --topbar-height: 56px;
+
+  /* Motion -------------------------------------------------------------- */
+  --flip-duration: 520ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+
+  /* Light palette ------------------------------------------------------- */
+  --bg: #f6f7fb;
+  --bg-accent: radial-gradient(120% 90% at 50% -10%, #eef0fd 0%, transparent 60%);
+  --surface: #ffffff;
+  --surface-2: #eef0f6;
+  --surface-3: #e3e6ef;
+  --text: #14161d;
+  --text-muted: #5d6376;
+  --text-inverse: #ffffff;
+  --border: #e0e4ee;
+  --border-strong: #c7cddc;
+
+  --brand: #5a5fe0;
+  --brand-strong: #4a4fd4;
+  --brand-soft: #eceafd;
+
+  --tile-correct: #14a37b;
+  --tile-present: #d3a032;
+  --tile-absent: #767d8c;
+  --tile-filled-text: #ffffff;
+
+  --key-bg: #d9dde8;
+  --key-text: #1a1d26;
+
+  --shadow-sm: 0 1px 2px rgb(16 20 34 / 0.06), 0 2px 6px rgb(16 20 34 / 0.05);
+  --shadow-md: 0 8px 24px -8px rgb(16 20 34 / 0.18), 0 2px 8px rgb(16 20 34 / 0.06);
+  --shadow-lg: 0 24px 60px -20px rgb(16 20 34 / 0.35);
+  --backdrop: rgb(18 20 30 / 0.42);
+}
+
+[data-theme='dark'] {
+  --bg: #0e1015;
+  --bg-accent: radial-gradient(120% 90% at 50% -10%, #1a1d2e 0%, transparent 62%);
+  --surface: #171a22;
+  --surface-2: #1f232d;
+  --surface-3: #272c38;
+  --text: #edf0f7;
+  --text-muted: #98a0b2;
+  --text-inverse: #0e1015;
+  --border: #262b36;
+  --border-strong: #39404f;
+
+  --brand: #8188f7;
+  --brand-strong: #6f77f2;
+  --brand-soft: #22263c;
+
+  --tile-correct: #17a67d;
+  --tile-present: #c99a37;
+  --tile-absent: #3b4250;
+  --tile-filled-text: #ffffff;
+
+  --key-bg: #333a48;
+  --key-text: #edf0f7;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 10px 26px -10px rgb(0 0 0 / 0.7);
+  --shadow-lg: 0 30px 70px -24px rgb(0 0 0 / 0.8);
+  --backdrop: rgb(6 8 14 / 0.62);
+}
+
+/* Colour-blind friendly palette: hue pairs that stay distinct for the most
+   common forms of colour vision deficiency. */
+[data-contrast='high'] {
+  --tile-correct: #2f7ff0;
+  --tile-present: #f0801f;
+}
+[data-contrast='high'][data-theme='dark'] {
+  --tile-correct: #4d94ff;
+  --tile-present: #f28c2c;
+}
+
+/* Reset ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: var(--bg-accent);
+  background-repeat: no-repeat;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, p, dl, dd, ul, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+a { color: var(--brand); }
+
+svg { display: block; }
+
+:focus-visible {
+  outline: 2.5px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] { display: none !important; }

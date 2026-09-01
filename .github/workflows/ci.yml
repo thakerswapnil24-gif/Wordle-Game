@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  # Pushes to a branch with an open pull request are covered by `pull_request`;
+  # limiting `push` to the default branch stops every commit running CI twice.
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Game logic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Stage the web bundle
+        run: npm run build:www
+
+  android:
+    name: Android debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - run: npm ci
+
+      - name: Sync web assets into the Android project
+        run: npm run sync:android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Confirm the game is packaged inside the APK
+        run: |
+          APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
+          # A sync that silently did nothing would still produce a valid APK —
+          # one that opens to a blank screen. Check the assets are really there.
+          for entry in \
+            assets/public/index.html \
+            assets/public/src/js/main.js \
+            assets/public/src/data/answers.js
+          do
+            unzip -l "$APK" | grep -q "$entry" \
+              || { echo "::error::$entry is missing from the APK"; exit 1; }
+          done
+          echo "APK is $(du -h "$APK" | cut -f1) and contains the web bundle"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pentaword-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

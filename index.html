@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-contrast="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
+<title>Pentaword — a five-letter word game</title>
+<meta name="description" content="Pentaword is a daily five-letter word puzzle. Six tries, one word a day, plus unlimited practice rounds.">
+<meta name="theme-color" content="#fbfbfd">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pentaword">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="manifest" href="assets/site.webmanifest">
+<link rel="stylesheet" href="src/styles/base.css">
+<link rel="stylesheet" href="src/styles/layout.css">
+<link rel="stylesheet" href="src/styles/components.css">
+<link rel="stylesheet" href="src/styles/animations.css">
+</head>
+<body>
+
+<div class="app" id="app" hidden>
+  <header class="topbar">
+    <button type="button" class="icon-button" id="help-button" aria-label="How to play">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.5 2.6c-.6.2-.9.7-.9 1.3v.6"/><circle cx="12" cy="17" r="1.05" fill="currentColor" stroke="none"/></svg>
+    </button>
+
+    <a class="brand" href="./" aria-label="Pentaword home">
+      <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7b6ef6"/>
+            <stop offset="55%" stop-color="#4f7ef0"/>
+            <stop offset="100%" stop-color="#10a37b"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="1" width="38" height="38" rx="11.5" fill="url(#brandGradient)"/>
+        <g fill="#fff">
+          <rect x="14.8" y="10.5" width="4" height="19" rx="1.6"/>
+          <path fill-rule="evenodd" d="M18.8 10.4A6.4 6.4 0 0 1 18.8 23.2ZM18.8 14.4A2.4 2.4 0 0 1 18.8 19.2Z"/>
+        </g>
+      </svg>
+      <span class="brand__name">Pentaword</span>
+    </a>
+
+    <div class="topbar__actions">
+      <button type="button" class="icon-button" id="theme-button" aria-label="Switch to dark mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2Z"/></svg>
+      </button>
+      <button type="button" class="icon-button" id="stats-button" aria-label="Statistics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5h15"/><rect x="6" y="12" width="3.4" height="5"/><rect x="10.3" y="8" width="3.4" height="9"/><rect x="14.6" y="4.6" width="3.4" height="12.4"/></svg>
+      </button>
+      <button type="button" class="icon-button" id="settings-button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.9"/><path d="M12 3.2h.9l.5 2.1a6.9 6.9 0 0 1 1.8 1l2-.8.9 1.5-1.6 1.5c.1.5.1 1.1 0 1.6l1.6 1.5-.9 1.5-2-.8a6.9 6.9 0 0 1-1.8 1l-.5 2.1h-1.8l-.5-2.1a6.9 6.9 0 0 1-1.8-1l-2 .8-.9-1.5 1.6-1.5a6.4 6.4 0 0 1 0-1.6L6 7l.9-1.5 2 .8a6.9 6.9 0 0 1 1.8-1l.5-2.1Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="modes">
+    <div class="modes__switch" role="group" aria-label="Game mode">
+      <button type="button" class="modes__tab" id="mode-daily" aria-pressed="true" data-mode="daily">Daily</button>
+      <button type="button" class="modes__tab" id="mode-practice" aria-pressed="false" data-mode="practice">Practice</button>
+      <span class="modes__thumb" aria-hidden="true"></span>
+    </div>
+    <p class="modes__caption" id="mode-caption">Puzzle #1</p>
+  </div>
+
+  <main class="play" id="play">
+    <div class="board" id="board"></div>
+    <div class="toaster" id="toaster" aria-hidden="true"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="keyboard" id="keyboard"></div>
+  </footer>
+</div>
+
+<noscript>
+  <div class="fallback">
+    <h1>Pentaword needs JavaScript</h1>
+    <p>This is a fully client-side game — please enable JavaScript to play.</p>
+  </div>
+</noscript>
+
+<div class="fallback" id="boot-error" hidden>
+  <h1>Pentaword could not start</h1>
+  <p id="boot-error-detail">Something went wrong while loading the game.</p>
+  <p class="fallback__hint">
+    If you opened <code>index.html</code> straight from your file system, your browser blocks
+    JavaScript modules for local files. Serve the folder instead:
+  </p>
+  <pre class="fallback__code">npm start</pre>
+  <p class="fallback__hint">…then open the address it prints.</p>
+</div>
+
+<!-- ------------------------------- dialogs ------------------------------- -->
+
+<dialog class="modal" id="help-modal" aria-labelledby="help-title">
+  <div class="modal__panel" tabindex="-1" autofocus>
+    <header class="modal__header">
+      <h2 class="modal__title" id="help-title">How to play</h2>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </header>
+    <div class="modal__body prose">
+      <p>Guess the hidden <strong>five-letter word</strong> in six tries. Every guess must be a real word.</p>
+      <p>After each guess the tiles change colour to show how close you were.</p>
+
+      <ul class="examples">
+        <li class="example">
+          <div class="example__tiles" aria-hidden="true">
+            <span class="tile tile--static" data-state="correct" data-filled="true"><span class="tile__face">S</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">L</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">A</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">T</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">E</span></span>
+          </div>
+          <p><strong>S</strong> is in the word and in the right spot.</p>
+        </li>
+        <li class="example">
+          <div class="example__tiles" aria-hidden="true">
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">C</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">R</span></span>
+            <span class="tile tile--static" data-state="present" data-filled="true"><span class="tile__face">A</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">N</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">E</span></span>
+          </div>
+          <p><strong>A</strong> is in the word but in the wrong spot.</p>
+        </li>
+        <li class="example">
+          <div class="example__tiles" aria-hidden="true">
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">P</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">O</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">U</span></span>
+            <span class="tile tile--static" data-state="absent" data-filled="true"><span class="tile__face">N</span></span>
+            <span class="tile tile--static" data-filled="true"><span class="tile__face">D</span></span>
+          </div>
+          <p><strong>N</strong> is not in the word at all.</p>
+        </li>
+      </ul>
+
+      <h3>Repeated letters</h3>
+      <p>
+        A letter is only highlighted as many times as it actually appears. If the answer holds a
+        single <strong>E</strong> and you guess two, just one of them lights up.
+      </p>
+
+      <h3>Two ways to play</h3>
+      <p>
+        <strong>Daily</strong> gives everyone the same word each day and keeps your streak.
+        <strong>Practice</strong> is unlimited — a new random word whenever you want one.
+      </p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="button button--primary" data-close-modal>Let’s play</button>
+    </footer>
+  </div>
+</dialog>
+
+<dialog class="modal" id="stats-modal" aria-labelledby="stats-title">
+  <div class="modal__panel" tabindex="-1" autofocus>
+    <header class="modal__header">
+      <h2 class="modal__title" id="stats-title">Statistics</h2>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <p class="result-banner" id="result-banner" hidden></p>
+      <div class="stats__scope" role="group" aria-label="Statistics scope">
+        <button type="button" class="chip chip--active" id="stats-scope-daily" data-scope="daily">Daily</button>
+        <button type="button" class="chip" id="stats-scope-practice" data-scope="practice">Practice</button>
+      </div>
+      <div class="stats" id="stats-panel"></div>
+    </div>
+    <footer class="modal__footer modal__footer--split" id="stats-actions">
+      <div class="countdown" id="countdown" hidden>
+        <span class="countdown__label">Next puzzle</span>
+        <span class="countdown__value" id="countdown-value">--:--:--</span>
+      </div>
+      <div class="modal__buttons">
+        <button type="button" class="button" id="new-game-button" hidden>New word</button>
+        <button type="button" class="button button--primary" id="share-button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="button__icon"><path d="M12 15.5V4.2m0 0L8.3 8M12 4.2 15.7 8M5 14v4.5a1.8 1.8 0 0 0 1.8 1.8h10.4A1.8 1.8 0 0 0 19 18.5V14"/></svg>
+          Share
+        </button>
+      </div>
+    </footer>
+  </div>
+</dialog>
+
+<dialog class="modal" id="settings-modal" aria-labelledby="settings-title">
+  <div class="modal__panel" tabindex="-1" autofocus>
+    <header class="modal__header">
+      <h2 class="modal__title" id="settings-title">Settings</h2>
+      <button type="button" class="icon-button" data-close-modal aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11"/></svg>
+      </button>
+    </header>
+    <div class="modal__body">
+      <ul class="settings">
+        <li class="setting">
+          <div class="setting__text">
+            <span class="setting__name" id="label-dark">Dark mode</span>
+            <span class="setting__hint">Follows your device until you choose.</span>
+          </div>
+          <button type="button" class="switch" id="toggle-dark" role="switch" aria-checked="false" aria-labelledby="label-dark">
+            <span class="switch__track"><span class="switch__thumb"></span></span>
+          </button>
+        </li>
+        <li class="setting">
+          <div class="setting__text">
+            <span class="setting__name" id="label-hard">Hard mode</span>
+            <span class="setting__hint">Every revealed hint must be used in later guesses.</span>
+          </div>
+          <button type="button" class="switch" id="toggle-hard" role="switch" aria-checked="false" aria-labelledby="label-hard">
+            <span class="switch__track"><span class="switch__thumb"></span></span>
+          </button>
+        </li>
+        <li class="setting">
+          <div class="setting__text">
+            <span class="setting__name" id="label-contrast">High contrast</span>
+            <span class="setting__hint">Blue and orange tiles for better colour separation.</span>
+          </div>
+          <button type="button" class="switch" id="toggle-contrast" role="switch" aria-checked="false" aria-labelledby="label-contrast">
+            <span class="switch__track"><span class="switch__thumb"></span></span>
+          </button>
+        </li>
+      </ul>
+      <p class="settings__note" id="storage-note" hidden>
+        Your browser is blocking local storage, so statistics and progress will be lost when you close this tab.
+      </p>
+      <div class="about">
+        <p class="about__line"><strong>Pentaword</strong> — an original word game. Not affiliated with any other word puzzle.</p>
+        <p class="about__line" id="dictionary-note"></p>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div class="sr-only" id="announcer" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  // If the module below never runs (file:// origin, a syntax error, an old
+  // browser), show a useful message instead of a blank page.
+  window.__pentawordBooted = false;
+  setTimeout(function () {
+    if (!window.__pentawordBooted) {
+      var app = document.getElementById('app');
+      var err = document.getElementById('boot-error');
+      if (app) app.hidden = true;
+      if (err) err.hidden = false;
+    }
+  }, 1200);
+  window.addEventListener('error', function (event) {
+    var detail = document.getElementById('boot-error-detail');
+    if (!window.__pentawordBooted && detail && event.message) detail.textContent = event.message;
+  });
+</script>
+<script type="module" src="src/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "pentaword",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pentaword — an original daily five-letter word game. No build step, no backend.",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "dev": "node tools/serve.mjs",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "build:words": "node tools/build-wordlists.mjs",
+    "build:icons": "node tools/build-icons.mjs",
+    "build:www": "node tools/build-www.mjs",
+    "sync:android": "node tools/build-www.mjs && cap sync android",
+    "open:android": "cap open android"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/share": "^7.0.4",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.9"
+  }
+}

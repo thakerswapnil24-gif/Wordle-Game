@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark counterparts; the launch screen follows the system theme so the
+         app never flashes a bright panel at a player in dark mode. -->
+    <color name="appBackground">#0E1015</color>
+</resources>
