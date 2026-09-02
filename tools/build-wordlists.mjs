@@ -105,6 +105,75 @@ sluts smuts spick spics twats wanky
 
 const IS_WORD = /^[a-z]{5}$/;
 
+/**
+ * How hard a word is to guess, scored 0 (easiest) to 1 (hardest).
+ *
+ * The daily puzzle draws from the harder end of the answer list, so this decides
+ * what "harder" means. The weights favour words that genuinely cost guesses over
+ * words that are merely obscure — an unfamiliar word is frustrating, whereas a
+ * word you know but cannot pin down is the puzzle working.
+ *
+ *   neighbours   The strongest signal. A word one letter away from many other
+ *                answers can burn every remaining guess: _OUND is BOUND, FOUND,
+ *                HOUND, MOUND, POUND, ROUND, SOUND, WOUND.
+ *   repeated     Doubled letters break the instinct to spend guesses on new
+ *                letters, and the colouring for them is what players misread.
+ *   rarity       Position in the frequency list. Weighted modestly on purpose:
+ *                the whole answer list is already common English, so this
+ *                separates "less everyday" from "everyday", not "obscure".
+ *   rareLetters  J Q X Z V W K F are tried late, if at all.
+ *   fewVowels    One vowel leaves less to anchor on than three.
+ */
+function difficultyScores(answers) {
+  const n = answers.length;
+  const RARE_LETTERS = new Set('jqxzvwkf');
+  const VOWELS = new Set('aeiou');
+
+  // Words at Hamming distance 1 from each other, bucketed by the pattern they
+  // share so this stays linear-ish rather than comparing every pair.
+  const neighbours = new Map(answers.map((w) => [w, 0]));
+  for (let position = 0; position < 5; position += 1) {
+    const buckets = new Map();
+    for (const word of answers) {
+      const pattern = `${word.slice(0, position)}.${word.slice(position + 1)}`;
+      if (!buckets.has(pattern)) buckets.set(pattern, []);
+      buckets.get(pattern).push(word);
+    }
+    for (const group of buckets.values()) {
+      if (group.length < 2) continue;
+      for (const word of group) neighbours.set(word, neighbours.get(word) + group.length - 1);
+    }
+  }
+  const mostNeighbours = Math.max(1, ...neighbours.values());
+
+  return new Map(answers.map((word, index) => {
+    const rarity = n > 1 ? index / (n - 1) : 0;
+    const neighbourShare = neighbours.get(word) / mostNeighbours;
+    const repeated = new Set(word).size < 5 ? 1 : 0;
+    const rare = [...word].filter((c) => RARE_LETTERS.has(c)).length / 3;
+    const vowels = [...word].filter((c) => VOWELS.has(c)).length;
+    const fewVowels = vowels <= 1 ? 1 : vowels === 2 ? 0.4 : 0;
+
+    const score = 0.35 * neighbourShare
+      + 0.25 * repeated
+      + 0.20 * rarity
+      + 0.10 * Math.min(1, rare)
+      + 0.10 * fewVowels;
+    return [word, { score, neighbours: neighbours.get(word), repeated, vowels }];
+  }));
+}
+
+/**
+ * Share of the answer list reserved for the daily puzzle, taken from the hard
+ * end. Practice keeps the whole list, so its average difficulty sits at the
+ * median while the daily's sits well above it — which is the point.
+ *
+ * 0.6 rather than 0.5 keeps the daily rotation long: the sequence covers every
+ * daily answer before repeating, so this is also how many days of unique
+ * puzzles exist before the cycle comes round.
+ */
+const DAILY_SHARE = 0.6;
+
 async function fetchWords(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
@@ -175,11 +244,25 @@ if (answers.length < 500) {
   throw new Error(`only ${answers.length} answers survived curation — check the sources`);
 }
 
+// Rank by difficulty and reserve the harder end for the daily puzzle.
+const scores = difficultyScores(answers);
+const byDifficulty = [...answers].sort((a, b) => scores.get(b).score - scores.get(a).score);
+const dailyAnswers = byDifficulty.slice(0, Math.round(answers.length * DAILY_SHARE));
+// Emitted in frequency order, not difficulty order, so the file stays readable
+// and the daily rotation's own shuffle is the only thing deciding sequence.
+const dailySet = new Set(dailyAnswers);
+const dailyInFrequencyOrder = answers.filter((w) => dailySet.has(w));
+
 await writeFile('src/data/answers.js', module_(
   'ANSWERS',
-  'Puzzle solutions, ordered from most to least common in everyday English.',
+  'Every puzzle solution, ordered from most to least common in everyday English.',
   answers,
-));
+) + '\n' + module_(
+  'DAILY_ANSWERS',
+  'The harder share of ANSWERS, reserved for the daily puzzle. Practice draws\n'
+    + '// from the whole list, so the daily is consistently the tougher one.',
+  dailyInFrequencyOrder,
+).split('\n').slice(1).join('\n'));
 await writeFile('src/data/allowed.js', module_(
   'ALLOWED_GUESSES',
   'Words accepted as guesses only. The full valid set is ALLOWED_GUESSES + ANSWERS.',
@@ -187,6 +270,9 @@ await writeFile('src/data/allowed.js', module_(
 ));
 
 console.log(`answers: ${answers.length}`);
+console.log(`daily answers: ${dailyAnswers.length} (${(DAILY_SHARE * 100).toFixed(0)}% hardest — ${Math.floor(dailyAnswers.length / 365)}y ${dailyAnswers.length % 365}d of unique dailies)`);
+console.log(`hardest 12:  ${byDifficulty.slice(0, 12).join(' ')}`);
+console.log(`easiest 12:  ${byDifficulty.slice(-12).join(' ')}`);
 console.log(`guess-only words: ${allowed.length - answers.length}`);
 console.log(`total valid guesses: ${allowed.length}`);
 

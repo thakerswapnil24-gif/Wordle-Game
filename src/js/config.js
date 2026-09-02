@@ -48,6 +48,7 @@ export const STORAGE_KEYS = Object.freeze({
   stats: 'pentaword:stats:v1',
   daily: 'pentaword:game:daily:v1',
   practice: 'pentaword:game:practice:v1',
+  progress: 'pentaword:daily-progress:v1',
 });
 
 /** Animation timings (ms). Mirrored in CSS custom properties. */

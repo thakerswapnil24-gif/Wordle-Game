@@ -38,17 +38,25 @@ export class Modal {
   close() {
     if (!this.dialog.open) return;
     this.dialog.classList.add('modal--closing');
+
+    // Whichever of the two paths below arrives first closes the dialog; the
+    // other must then find nothing left to do. Tearing the listener down
+    // matters especially: left behind, it fires on the *entry* animation of
+    // the next open and slams the dialog shut the instant it appears.
+    let settled = false;
     const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      this.dialog.removeEventListener('animationend', finish);
       this.dialog.classList.remove('modal--closing');
       this.dialog.close();
       for (const cb of this.onCloseCallbacks) cb();
     };
+
     // Wait for the exit animation, but never hang if it does not run.
-    const timer = setTimeout(finish, 200);
-    this.dialog.addEventListener('animationend', () => {
-      clearTimeout(timer);
-      finish();
-    }, { once: true });
+    const timer = setTimeout(finish, 400);
+    this.dialog.addEventListener('animationend', finish);
   }
 
   onClose(callback) {

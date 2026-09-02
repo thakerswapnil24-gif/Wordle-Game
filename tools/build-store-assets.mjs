@@ -18,6 +18,7 @@
  */
 import { mkdir, copyFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
+import { answerForPuzzle, puzzleNumberFor } from '../src/js/dictionary.js';
 
 // Playwright is not a project dependency — store assets are regenerated rarely,
 // and pulling a browser download into every `npm ci` is not worth it.
@@ -78,12 +79,28 @@ console.log(`${OUT}/feature-graphic.png  1024x500`);
 
 /* -------------------------------- screenshots ----------------------------- */
 
+// A staged daily has to agree with the calendar, or the app discards it as a
+// leftover from another day and the capture shows an empty board. The number
+// and its word therefore come from the same rotation the player sees.
+const DAILY_PUZZLE = puzzleNumberFor();
+const DAILY_WORD = answerForPuzzle(DAILY_PUZZLE);
+
 /**
  * Put the game into a known state by writing a finished or part-finished board
  * into storage before the app boots, so every capture is reproducible.
  */
-async function stage(page, { theme, mode, answer, guesses }) {
-  await page.addInitScript(([theme, mode, answer, guesses]) => {
+async function stage(page, shot) {
+  const { theme } = shot;
+  const mode = shot.mode;
+  // Daily shots always show it solved, which is also the state that raises the
+  // "come back tomorrow" panel.
+  const answer = mode === 'daily' ? DAILY_WORD : shot.answer;
+  const guesses = mode === 'daily' && shot.guesses
+    ? [...shot.guesses.slice(0, -1), DAILY_WORD]
+    : shot.guesses;
+  const puzzle = DAILY_PUZZLE;
+
+  await page.addInitScript(([theme, mode, answer, guesses, puzzle]) => {
     localStorage.setItem('pentaword:seen-intro:v1', 'true');
     localStorage.setItem('pentaword:settings:v1', JSON.stringify({
       theme, hardMode: false, highContrast: false,
@@ -91,7 +108,7 @@ async function stage(page, { theme, mode, answer, guesses }) {
     localStorage.setItem('pentaword:stats:v1', JSON.stringify({
       daily: {
         played: 34, wins: 31, currentStreak: 9, maxStreak: 14,
-        distribution: [1, 4, 9, 10, 5, 2], lastPuzzle: null,
+        distribution: [1, 4, 9, 10, 5, 2], lastPuzzle: mode === 'daily' ? puzzle : null,
       },
       practice: {
         played: 12, wins: 11, currentStreak: 4, maxStreak: 6,
@@ -100,12 +117,16 @@ async function stage(page, { theme, mode, answer, guesses }) {
     }));
     if (answer) {
       localStorage.setItem(`pentaword:game:${mode}:v1`, JSON.stringify({
-        mode, answer, puzzleNumber: mode === 'daily' ? 244 : null,
-        guesses, hardMode: false, recorded: true,
+        mode, answer, puzzleNumber: mode === 'daily' ? puzzle : null,
+        guesses, hardMode: false, recorded: true, hints: [],
         status: guesses.at(-1) === answer ? 'won' : 'playing',
       }));
+      if (mode === 'daily' && guesses.at(-1) === answer) {
+        localStorage.setItem('pentaword:daily-progress:v1',
+          JSON.stringify({ highestPuzzle: puzzle, completedPuzzle: puzzle }));
+      }
     }
-  }, [theme, mode, answer, guesses]);
+  }, [theme, mode, answer, guesses, puzzle]);
 }
 
 const SHOTS = [
@@ -119,10 +140,14 @@ const SHOTS = [
   },
   {
     name: 'phone-3-stats', device: 'phone', theme: 'light', mode: 'daily',
-    answer: 'sheet', guesses: ['canoe', 'sheet'], open: '#stats-button',
+    guesses: ['canoe', 'sheet'], open: '#stats-button',
   },
   {
-    name: 'phone-4-help', device: 'phone', theme: 'dark', mode: 'practice',
+    name: 'phone-4-daily', device: 'phone', theme: 'light', mode: 'daily',
+    guesses: ['canoe', 'lodge', 'sheet'],
+  },
+  {
+    name: 'phone-5-help', device: 'phone', theme: 'dark', mode: 'practice',
     open: '#help-button',
   },
   {
@@ -131,7 +156,7 @@ const SHOTS = [
   },
   {
     name: 'tablet-2-stats', device: 'tablet', theme: 'dark', mode: 'daily',
-    answer: 'sheet', guesses: ['canoe', 'sheet'], open: '#stats-button',
+    guesses: ['canoe', 'sheet'], open: '#stats-button',
   },
 ];
 

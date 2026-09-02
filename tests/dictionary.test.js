@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ANSWERS } from '../src/data/answers.js';
+import { ANSWERS, DAILY_ANSWERS } from '../src/data/answers.js';
 import { ALLOWED_GUESSES } from '../src/data/allowed.js';
 import {
-  answerCount, answerForPuzzle, dailyAnswer, isValidWord, msUntilNextPuzzle,
-  puzzleNumberFor, randomAnswer, rejectionReason, validWordCount,
+  answerCount, answerForPuzzle, dailyAnswer, dailyAnswerCount, isValidWord,
+  msUntilNextPuzzle, puzzleNumberFor, randomAnswer, rejectionReason, validWordCount,
 } from '../src/js/dictionary.js';
 
 test('both word lists contain only lowercase five-letter words', () => {
@@ -73,16 +73,54 @@ test('the daily answer is deterministic across "players"', () => {
   assert.equal(first, second);
 });
 
-test('the rotation covers every answer before repeating', () => {
+test('the rotation covers every daily answer before repeating', () => {
   const seen = new Set();
-  for (let n = 1; n <= answerCount; n += 1) seen.add(answerForPuzzle(n));
-  assert.equal(seen.size, answerCount);
-  assert.equal(answerForPuzzle(answerCount + 1), answerForPuzzle(1));
+  for (let n = 1; n <= dailyAnswerCount; n += 1) seen.add(answerForPuzzle(n));
+  assert.equal(seen.size, dailyAnswerCount);
+  assert.equal(answerForPuzzle(dailyAnswerCount + 1), answerForPuzzle(1));
 });
 
 test('the rotation is shuffled rather than following the source order', () => {
   const firstTen = Array.from({ length: 10 }, (_, i) => answerForPuzzle(i + 1));
-  assert.notDeepEqual(firstTen, ANSWERS.slice(0, 10));
+  assert.notDeepEqual(firstTen, DAILY_ANSWERS.slice(0, 10));
+});
+
+/* ------------------------- daily vs practice pools ------------------------ */
+
+test('the daily pool is a strict subset of the answer pool', () => {
+  const answers = new Set(ANSWERS);
+  assert.ok(DAILY_ANSWERS.every((w) => answers.has(w)), 'every daily word must be an answer');
+  assert.equal(new Set(DAILY_ANSWERS).size, DAILY_ANSWERS.length);
+  assert.ok(dailyAnswerCount < answerCount, 'the daily pool must be narrower than the whole list');
+  assert.ok(dailyAnswerCount > 365, `only ${dailyAnswerCount} daily answers — under a year`);
+});
+
+test('the daily never serves a word held back for practice', () => {
+  const daily = new Set(DAILY_ANSWERS);
+  for (let n = 1; n <= dailyAnswerCount + 20; n += 1) {
+    assert.ok(daily.has(answerForPuzzle(n)), `puzzle ${n} is outside the daily pool`);
+  }
+});
+
+test('practice draws on the whole list, including the easier words', () => {
+  const daily = new Set(DAILY_ANSWERS);
+  const seen = new Set();
+  for (let i = 0; i < 4000; i += 1) seen.add(randomAnswer());
+  const easier = [...seen].filter((w) => !daily.has(w));
+  assert.ok(easier.length > 50, `practice only produced ${easier.length} non-daily words`);
+});
+
+test('the daily pool really is the harder end of the list', () => {
+  // The generator scores difficulty; the property that must survive here is the
+  // one a player would notice — daily words repeat letters and have more
+  // one-letter-away neighbours (SHELL/SMELL/SPELL) than practice-only words.
+  const daily = new Set(DAILY_ANSWERS);
+  const practiceOnly = ANSWERS.filter((w) => !daily.has(w));
+  const repeatShare = (list) => list.filter((w) => new Set(w).size < 5).length / list.length;
+  assert.ok(
+    repeatShare(DAILY_ANSWERS) > repeatShare(practiceOnly),
+    'daily words should repeat letters more often than practice-only words',
+  );
 });
 
 test('puzzle numbers never fall below one', () => {
