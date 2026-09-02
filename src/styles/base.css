@@ -44,8 +44,14 @@
   --tile-absent: #767d8c;
   --tile-filled-text: #ffffff;
 
+  /* A key the player has spent must read as spent at a glance, so it gets its
+     own colour rather than the tile's: the board wants "absent" to be a clearly
+     filled block, while the keyboard wants it to recede below the keys still
+     worth pressing. Keeping the two on one token is what made them collide. */
   --key-bg: #d9dde8;
   --key-text: #1a1d26;
+  --key-absent: #666c7a;
+  --key-absent-text: #f2f4f9;
 
   --shadow-sm: 0 1px 2px rgb(16 20 34 / 0.06), 0 2px 6px rgb(16 20 34 / 0.05);
   --shadow-md: 0 8px 24px -8px rgb(16 20 34 / 0.18), 0 2px 8px rgb(16 20 34 / 0.06);
@@ -71,11 +77,13 @@
 
   --tile-correct: #17a67d;
   --tile-present: #c99a37;
-  --tile-absent: #3b4250;
+  --tile-absent: #4a5262;
   --tile-filled-text: #ffffff;
 
-  --key-bg: #333a48;
+  --key-bg: #5d6779;
   --key-text: #edf0f7;
+  --key-absent: #212530;
+  --key-absent-text: #aab3c4;
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
   --shadow-md: 0 10px 26px -10px rgb(0 0 0 / 0.7);
