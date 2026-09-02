@@ -15,6 +15,15 @@ export function emptyStats() {
     maxStreak: 0,
     /** distribution[i] = games won on guess i+1 */
     distribution: new Array(MAX_GUESSES).fill(0),
+    /**
+     * Wins where at least one letter was revealed by a hint.
+     *
+     * Hinted wins currently count exactly like any other — they extend the
+     * streak and fill the distribution. This is recorded separately so that
+     * decision stays reversible: if hinted wins should later be excluded from
+     * streaks, the history needed to do it honestly already exists.
+     */
+    hintedWins: 0,
     /** puzzle number of the last completed daily, used to detect broken streaks */
     lastPuzzle: null,
   };
@@ -36,6 +45,7 @@ export function reviveStats(raw) {
     currentStreak: clampInt(raw.currentStreak),
     maxStreak: clampInt(raw.maxStreak),
     distribution: base.distribution.map((_, i) => clampInt(distribution[i])),
+    hintedWins: clampInt(raw.hintedWins),
     lastPuzzle: Number.isInteger(raw.lastPuzzle) ? raw.lastPuzzle : null,
   };
 }
@@ -68,9 +78,10 @@ export function saveStats(all) {
  * their streak is simply consecutive wins.
  *
  * @param {object} stats
- * @param {{won: boolean, guessCount: number, puzzleNumber?: number|null}} result
+ * @param {{won: boolean, guessCount: number, puzzleNumber?: number|null,
+ *          usedHint?: boolean}} result
  */
-export function applyResult(stats, { won, guessCount, puzzleNumber = null }) {
+export function applyResult(stats, { won, guessCount, puzzleNumber = null, usedHint = false }) {
   const next = {
     ...stats,
     distribution: [...stats.distribution],
@@ -83,6 +94,7 @@ export function applyResult(stats, { won, guessCount, puzzleNumber = null }) {
 
   if (won) {
     next.wins += 1;
+    if (usedHint) next.hintedWins += 1;
     const slot = Math.min(Math.max(guessCount, 1), MAX_GUESSES) - 1;
     next.distribution[slot] += 1;
     next.currentStreak = continuesStreak ? stats.currentStreak + 1 : 1;

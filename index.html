@@ -95,7 +95,21 @@
       <button type="button" class="modes__tab" id="mode-practice" aria-pressed="false" data-mode="practice">Practice</button>
       <span class="modes__thumb" aria-hidden="true"></span>
     </div>
-    <p class="modes__caption" id="mode-caption">Puzzle #1</p>
+    <div class="modes__meta">
+      <p class="modes__caption" id="mode-caption">Puzzle #1</p>
+      <button type="button" class="hint-button" id="hint-button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="hint-button__icon">
+          <path d="M9.2 17.3h5.6M10 20.2h4M12 3.4a5.9 5.9 0 0 1 3.7 10.5c-.6.5-.9 1.1-.9 1.8H9.2c0-.7-.3-1.3-.9-1.8A5.9 5.9 0 0 1 12 3.4Z"/>
+        </svg>
+        Hint
+      </button>
+    </div>
+    <!--
+      Letters revealed by a hint. Shown as their own row rather than written
+      into the board, because the board is typed left to right and cannot hold
+      a letter in the middle of an unfinished guess.
+    -->
+    <div class="hints" id="hint-strip" hidden aria-live="polite"></div>
   </div>
 
   <main class="play" id="play">
@@ -259,6 +273,13 @@
           <button type="button" class="switch" id="toggle-contrast" role="switch" aria-checked="false" aria-labelledby="label-contrast">
             <span class="switch__track"><span class="switch__thumb"></span></span>
           </button>
+        </li>
+        <li class="setting" id="privacy-setting" hidden>
+          <div class="setting__text">
+            <span class="setting__name">Privacy choices</span>
+            <span class="setting__hint">Change whether ads are personalised.</span>
+          </div>
+          <button type="button" class="button button--small" id="privacy-button">Manage</button>
         </li>
       </ul>
       <p class="settings__note" id="storage-note" hidden>

@@ -86,6 +86,8 @@ deletes.
   the shape of your solve without revealing the answer or your guesses. Uses the
   native share sheet on mobile.
 - **Hard mode** — every revealed hint must be reused in later guesses.
+- **Hints** — in the Android build, watch a rewarded ad to reveal one letter.
+  Recorded per game and in the statistics, and marked in the shared result.
 - **Dark and light themes**, following the system setting until you choose.
 - **High-contrast palette** — blue/orange tiles for colour-vision deficiency.
 - **Accessibility** — full keyboard operation, ARIA labels on every tile and key,
@@ -106,7 +108,8 @@ both word lists.
 
 The Android build is ad-supported, and the Google Mobile Ads SDK is the one
 component that reaches the network and reads the advertising ID — declared in the
-privacy policy and the Play Data safety form. See
+privacy policy and the Play Data safety form. Ads are inert in the web build, and
+an ad that fails to load never costs the player anything. See
 [docs/SECURITY.md](docs/SECURITY.md) and [docs/ADS.md](docs/ADS.md).
 
 ## Project structure
@@ -130,6 +133,7 @@ src/
     settings.js            theme, hard mode, high contrast
     share.js               spoiler-free emoji grid and clipboard/share sheet
     native.js              Android bridge; a no-op in a browser
+    ads/                   AdMob: consent, banner, interstitial, rewarded
     storage.js             defensive localStorage wrapper
     main.js                the controller that wires model to view
     ui/                    board, keyboard, modal, toast, stats dashboard

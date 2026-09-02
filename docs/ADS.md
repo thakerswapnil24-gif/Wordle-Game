@@ -1,12 +1,17 @@
-# Advertising: what the integration needs
+# Advertising
 
-Pentaword is free and ad-supported. This document is the plan for wiring up
-Google AdMob — the SDK is **not yet in the build**. Everything here is what has
-to happen, in order, and the things that go wrong if it doesn't.
+Pentaword is free and ad-supported, through Google AdMob. **The integration is
+built**: `src/js/ads/` holds the ad manager and its configuration, the plugin is
+installed, and the consent flow, all three ad formats and the hint mechanic are
+wired up and covered by tests.
 
-The compliance side is already done: the privacy policy, Data safety answers,
-content rating and advertising-ID declaration in `docs/privacy-policy.html` and
-`docs/play-listing.md` all describe the ad-supported app.
+What is **not** done, because only you can do it, is everything involving your
+own AdMob account: the real ad unit IDs, the real application ID, and testing on
+a device. Those are the sections marked **you must do this** below. The release
+workflow refuses to build a bundle until the first two are done.
+
+The compliance side is done: the privacy policy, Data safety answers, content
+rating and advertising-ID declaration all describe the ad-supported app.
 
 > **Do not file the ad-supported Data safety answers until the build you upload
 > actually contains the SDK.** `docs/play-listing.md` has both columns. Under-
@@ -15,7 +20,16 @@ content rating and advertising-ID declaration in `docs/privacy-policy.html` and
 
 ---
 
-## Ad formats and where they go
+## How it behaves
+
+All of this is implemented in `src/js/ads/ads.js`, with the placement rules in
+`src/js/ads/config.js`. Two principles run through it:
+
+- **Ads are inert off-device.** Every entry point is a no-op in a browser, so the
+  same source runs on the web, in tests and in the app.
+- **An ad failing never costs the player anything.** No SDK, no network, no fill,
+  a rejected promise — the game carries on exactly as if advertising were off.
+  Nothing waits on an ad it cannot get.
 
 Three formats, in descending order of how much they earn and how well they suit
 a puzzle game.
@@ -26,37 +40,56 @@ Player-initiated, entirely optional: *watch an ad to reveal one letter*. Highest
 revenue per impression and the least resented format, because nobody is forced
 into it.
 
-This is the only format that needs a **game feature that does not exist yet**: a
-hint mechanic. It should reveal one correct letter in a position the player has
-not solved, and — importantly — the game must record that a hint was used, so
-hinted wins can be excluded from the streak or marked in the share text.
-Decide that rule before building it; changing it later invalidates players'
-statistics.
+**Built.** The hint reveals one letter at a position the player has not already
+solved, chosen at random among those so a second hint cannot be predicted from
+the first. Revealed letters appear in their own row above the board rather than
+being written into it, because the board is typed left to right and cannot hold
+a letter in the middle of an unfinished guess.
+
+The button only appears when it can actually do something: an ad is loaded, the
+game is running, and there is a letter left worth revealing. Dismissing the ad
+early reveals nothing — and costs nothing.
+
+### The streak rule, and why it is recorded either way
+
+**A hinted win currently counts exactly like any other**: it extends the streak
+and fills the guess distribution. The share text marks it with 💡 so a shared
+result is never quietly flattering, but the statistics do not punish it.
+
+That decision is deliberately reversible. `hints` is stored per game and
+`hintedWins` is counted in the statistics from the day hints exist. If hinted
+wins should later be excluded from streaks, the history needed to do it honestly
+already exists — whereas deciding to record it *after* the fact would mean either
+a wrong recalculation or throwing away everyone's history.
 
 Never gate anything behind a rewarded ad that the player would otherwise have.
 Reward-for-hint is fine; reward-to-keep-playing is not.
 
 ### 2. Interstitial — after a completed round
 
-Full screen, shown when a game ends, **never mid-guess and never during the
-reveal animation**. Rules that keep it from ruining the game:
+**Built.** Full screen, shown after a game ends and *after the player closes the
+statistics dialog*, so it never lands on top of the result they just earned.
+Never mid-guess, never during the reveal animation. The rules enforced in code:
 
-- Only after the board is finished and the statistics dialog has been dismissed.
 - **Never after the daily puzzle.** One puzzle a day is the thing people come
   back for; interrupting it is how a daily game loses its audience. Practice
   rounds are where the impressions are.
-- Not on the first practice round of a session — let people play before charging
-  them attention.
-- Frequency cap: at most one every few minutes, and cap per session. AdMob's own
-  frequency capping is set per ad unit in the console; enforce a floor in the app
-  too, so a console misconfiguration cannot spam anyone.
-- Preload the next one while the player is guessing, so it appears instantly
-  rather than stalling the transition.
+- Not until the third completed round of a session — let people play before
+  charging them attention.
+- A three-minute floor between interstitials, enforced in the app as well as by
+  AdMob's own per-unit frequency capping, so a console misconfiguration cannot
+  spam anyone.
+- The next one is preloaded while the player is guessing, so it appears
+  instantly rather than stalling the transition.
+
+Tune the numbers in `PLACEMENT` in `src/js/ads/config.js`; the tests in
+`tests/ads.test.js` assert the behaviour, not the specific values.
 
 ### 3. Banner — bottom of the screen
 
-Steady but low-earning, and it costs board space. Measured, by shrinking the
-viewport by a banner's height and reading the resulting tile size:
+**Built**, shown in practice mode only. Steady but low-earning, and it costs
+board space. Measured, by shrinking the viewport by a banner's height and
+reading the resulting tile size:
 
 | Device | No banner | 50dp banner | 90dp adaptive |
 | --- | --- | --- | --- |
@@ -68,18 +101,21 @@ viewport by a banner's height and reading the resulting tile size:
 
 Nothing overflows in any configuration — the board is sized from available space
 by a `ResizeObserver`, so it absorbs the banner automatically. The cost is
-smaller tiles, and only on small screens. Recommendations that follow from the
-numbers:
+smaller tiles, and only on small screens.
 
-- Use **adaptive banners**, but be aware they can take 90dp on wide screens;
-  the two rows in bold are the cases to look at on a real device.
-- **Hide the banner during the daily puzzle**, for the same reason as the
-  interstitial: keep the once-a-day experience clean.
-- Consider hiding it in landscape, where the board is already tightest.
+Adaptive banners are used, which can take up to 90dp on wide screens; the two
+rows in bold are the cases to look at on a real device. The banner is hidden
+during the daily puzzle for the same reason as the interstitial.
+
+If 35px tiles prove too cramped in landscape on a real phone, the cheapest fix
+is to drop `MODE.PRACTICE` from `bannerModes` in landscape, or remove the banner
+entirely — it is the least valuable of the three formats.
 
 ---
 
-## Setup, in order
+---
+
+## Setup — you must do this
 
 ### 1. AdMob account and ad units
 
@@ -94,17 +130,21 @@ Set **maximum ad content rating** in the AdMob app settings to match the content
 rating the Play Console gives you. A G-rated puzzle game serving T-rated ads is a
 policy problem.
 
-### 2. The plugin
+### 2. Replace the ad unit IDs
 
-```bash
-npm install @capacitor-community/admob@7.2.0
-npm run sync:android
-```
+`src/js/ads/config.js` ships with Google's public test units. Replace all three
+with your own. The release workflow greps for the test publisher ID and fails the
+build while they are still there, so this cannot be forgotten.
 
-Pin the version: `@capacitor-community/admob@8` requires Capacitor 8, and this
-project is on Capacitor 7. Upgrading the plugin means upgrading Capacitor first.
+The plugin is already installed and pinned:
+`@capacitor-community/admob@7.2.0` — version 8 requires Capacitor 8, and this
+project is on Capacitor 7, so upgrading the plugin means upgrading Capacitor
+first.
 
 ### 3. The App ID in the manifest — the one that crashes
+
+The meta-data is already in `android/app/src/main/AndroidManifest.xml`, holding
+Google's **sample** application ID. Replace the value with your own:
 
 ```xml
 <meta-data
@@ -112,12 +152,11 @@ project is on Capacitor 7. Upgrading the plugin means upgrading Capacitor first.
     android:value="ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY" />
 ```
 
-inside `<application>` in `android/app/src/main/AndroidManifest.xml`.
-
 **If this is missing or malformed the app crashes on launch**, before anything
 renders — the SDK throws during initialisation. It is the single most common
-first-release AdMob failure. Add it in the same commit as the SDK, and check the
-app still opens before anything else.
+first-release AdMob failure, which is why the element is present from the start
+rather than left as a step to remember. The release workflow also fails while
+the sample ID is still in place.
 
 The App ID is not a secret; it is readable in any published APK. It is fine in
 the repository.
@@ -134,8 +173,10 @@ While developing, use **Google's test ad unit IDs**, never your real ones:
 
 Tapping your own live ads — even by accident, even once, while testing — is
 invalid traffic. Google suspends AdMob accounts for it, and the suspension is
-often permanent. Wire the IDs so the debug build uses test units and only the
-release build uses real ones; do not rely on remembering to swap them.
+often permanent.
+
+Every request also carries `isTesting` while the test units are configured, so
+development impressions stay out of real reporting.
 
 ### 5. Consent for EEA, UK and Switzerland
 
@@ -153,25 +194,35 @@ Requirements:
 Serving personalised ads to an EEA user without consent is a policy violation and
 a GDPR exposure. This is not optional and it is not something to add later.
 
-### 6. Update the CI permission gate
+### 6. The CI permission gate — already updated
 
 `.github/workflows/ci.yml` fails the build on any permission outside a reviewed
-allowlist. The Ads SDK's manifest merge is expected to add:
+allowlist. The Ads SDK's manifest merge adds **eight**, all now on the list:
 
-- `android.permission.ACCESS_NETWORK_STATE` — so the SDK can skip requesting ads
-  with no connection. Not a runtime permission.
-- `com.google.android.gms.permission.AD_ID` — reads the resettable advertising
-  ID. This is what the Play Console's Advertising ID declaration is checked
-  against; the two must agree.
+| Permission | What it is for |
+| --- | --- |
+| `ACCESS_NETWORK_STATE` | Skip requesting an ad with no connection |
+| `AD_ID` | Read the resettable advertising ID |
+| `ACCESS_ADSERVICES_AD_ID` | Android Privacy Sandbox |
+| `ACCESS_ADSERVICES_ATTRIBUTION` | Privacy Sandbox conversion measurement |
+| `ACCESS_ADSERVICES_TOPICS` | Privacy Sandbox interest signals |
+| `FOREGROUND_SERVICE` | Let a video ad finish playing |
+| `WAKE_LOCK` | Stop the device sleeping mid-ad |
+| `INTERNET` | Already present for Capacitor's local server |
 
-Add exactly those two to `allowed.txt` in that step, with a comment explaining
-each, and let the build fail on anything else. **Do not weaken the check to a
-pattern match** — the whole value of the gate is that a permission cannot arrive
-unnoticed, and the SDK is precisely the kind of dependency that could bring one.
+Every one is normal protection level — no runtime prompt, no access to personal
+data on the device.
 
-Run the build and read the diff the gate prints before allowing anything: if the
-SDK adds a permission not on this list, that is worth understanding rather than
-rubber-stamping.
+Worth noting how this went: the plan written before the SDK was added predicted
+two of these. The build failed on the other five, which is exactly what the gate
+is for. If a future SDK version brings a ninth, the build will fail again —
+read what it is and why before allowing it.
+
+They are listed one by one on purpose. **Do not weaken the check to a pattern
+match** — the whole value of the gate is that a permission cannot arrive
+unnoticed, and the Ads SDK is precisely the kind of dependency that could bring
+one. If a future SDK version adds a third, the build will fail; read what it is
+before allowing it rather than rubber-stamping.
 
 ### 7. app-ads.txt
 
@@ -198,10 +249,12 @@ place.
 
 ---
 
-## On-device checklist
+## On-device checklist — you must do this
 
-None of this can be verified in CI — there is no device and no emulator — so
-these must be checked on real hardware before a release:
+The behaviour is covered by tests against a fake AdMob plugin, which catches the
+app calling the SDK wrongly. It cannot catch the SDK itself behaving differently
+than expected, and there is no device or emulator in CI. Check these on real
+hardware before a release:
 
 - [ ] The app **launches** (proves the App ID meta-data is right).
 - [ ] Test ads appear in all three placements.

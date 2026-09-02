@@ -18,6 +18,10 @@ import { buildShareText, shareText } from './share.js';
 import { applySettings, isDark, loadSettings, nextTheme, saveSettings, THEME } from './settings.js';
 import * as storage from './storage.js';
 import { applyNativeTheme, hideSplash, isNative, onBackButton } from './native.js';
+import {
+  initAds, maybeShowInterstitial, noteGameCompleted, onAdsChanged, privacyOptionsAvailable,
+  rewardedAvailable, showPrivacyOptions, showRewardedAd, syncBanner,
+} from './ads/ads.js';
 import { Board } from './ui/board.js';
 import { Keyboard } from './ui/keyboard.js';
 import { Modal } from './ui/modal.js';
@@ -80,6 +84,18 @@ function boot() {
   hideSplash();
   wireBackButton();
 
+  // Ad availability changes on its own as ads load and are consumed, so the
+  // controls that offer them follow it rather than being refreshed by hand.
+  onAdsChanged(refreshAdControls);
+
+  // Deliberately not awaited: the game is playable before the ads stack is, and
+  // must stay playable if it never becomes ready at all.
+  initAds().then((ready) => {
+    if (!ready) return;
+    syncBanner(state.mode);
+    refreshAdControls();
+  });
+
   if (!hasPlayedBefore()) {
     modals.help.open();
     markPlayed();
@@ -109,6 +125,69 @@ function wireBackButton() {
     open.close();
     return true;
   });
+}
+
+/**
+ * Offer a hint in exchange for a rewarded ad.
+ *
+ * The ad is the price, so nothing is revealed unless the reward was actually
+ * earned — but a failure to show one costs the player nothing either, and says
+ * so rather than failing silently.
+ */
+async function requestHint() {
+  const game = currentGame();
+  if (state.busy || !game.canHint) return;
+
+  const button = $('hint-button');
+  button.disabled = true;
+  try {
+    const earned = await showRewardedAd();
+    if (!earned) {
+      toast('No hint this time — the ad was not completed');
+      return;
+    }
+    const hint = game.revealHint();
+    if (!hint) return;
+    persist(game);
+    renderHints();
+    const position = ['1st', '2nd', '3rd', '4th', '5th'][hint.index];
+    toast(`${position} letter is ${hint.letter.toUpperCase()}`, { tone: 'success' });
+    announce(`Hint: the ${position} letter is ${hint.letter.toUpperCase()}`);
+  } finally {
+    button.disabled = false;
+    refreshAdControls();
+  }
+}
+
+/** Paint the revealed-letter strip. */
+function renderHints() {
+  const game = currentGame();
+  const strip = $('hint-strip');
+  strip.hidden = !game.usedHint;
+  if (strip.hidden) return;
+
+  strip.textContent = '';
+  game.hintRow.forEach((letter, i) => {
+    const cell = document.createElement('span');
+    cell.className = letter ? 'hints__cell hints__cell--revealed' : 'hints__cell';
+    cell.textContent = letter ? letter.toUpperCase() : '·';
+    cell.setAttribute('aria-label', letter
+      ? `Revealed: letter ${i + 1} is ${letter.toUpperCase()}`
+      : `Letter ${i + 1} not revealed`);
+    strip.append(cell);
+  });
+}
+
+/**
+ * Show the hint button only when it can actually do something: an ad is loaded,
+ * the game is running, and there is a letter left worth revealing.
+ */
+function refreshAdControls() {
+  const game = currentGame();
+  const button = $('hint-button');
+  button.hidden = !(rewardedAvailable() && game.canHint);
+  const privacy = $('privacy-setting');
+  if (privacy) privacy.hidden = !privacyOptionsAvailable();
 }
 
 const SEEN_KEY = 'pentaword:seen-intro:v1';
@@ -291,6 +370,7 @@ function finishGame(game, won) {
       won,
       guessCount: game.guessCount,
       puzzleNumber: game.mode === MODE.DAILY ? game.puzzleNumber : null,
+      usedHint: game.usedHint,
     });
     saveStats(state.stats);
   }
@@ -303,6 +383,16 @@ function finishGame(game, won) {
   state.busy = false;
   keyboard.setEnabled(true);
   render();
+  refreshAdControls();
+
+  noteGameCompleted();
+  // The interstitial waits until the player has closed the statistics, so it
+  // never lands on top of the result they just earned.
+  const finishedMode = game.mode;
+  modals.stats.onClose(function afterStats() {
+    modals.stats.onCloseCallbacks.delete(afterStats);
+    void maybeShowInterstitial(finishedMode);
+  });
   setTimeout(() => openStats({ scope: game.mode }), won ? 1500 : 2200);
 }
 
@@ -322,6 +412,8 @@ function renderAll() {
   keyboard.update(game.letterHints);
   keyboard.setEnabled(true);
   updateModeCaption();
+  renderHints();
+  refreshAdControls();
 }
 
 function updateModeCaption() {
@@ -350,6 +442,7 @@ function setMode(mode, { animate = true } = {}) {
   board.reset();
   keyboard.reset();
   renderAll();
+  syncBanner(mode);
   if (animate) $('board').classList.add('board--enter');
   setTimeout(() => $('board').classList.remove('board--enter'), 320);
 }
@@ -362,6 +455,12 @@ function wireChrome() {
   for (const button of document.querySelectorAll('.topbar .icon-button')) {
     button.addEventListener('click', blurOnPointerClick);
   }
+
+  $('hint-button').addEventListener('click', requestHint);
+  $('privacy-button').addEventListener('click', async () => {
+    const shown = await showPrivacyOptions();
+    if (!shown) toast('Privacy options are not available on this device');
+  });
 
   $('help-button').addEventListener('click', () => modals.help.open());
   $('stats-button').addEventListener('click', () => openStats());
