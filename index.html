@@ -118,6 +118,22 @@
   </main>
 
   <footer class="footer">
+    <!--
+      Takes the keyboard's place once the daily is finished. The daily is one
+      word a day: it cannot be replayed, and yesterday's cannot be started. It
+      sits here, rather than over the board, so it costs no height the board
+      needs — the finished grid stays fully visible behind it.
+    -->
+    <div class="lockout" id="daily-lock" hidden>
+      <p class="lockout__title">That’s today’s puzzle done</p>
+      <p class="lockout__text">
+        One daily word a day — the next unlocks in
+        <span class="lockout__countdown" id="lock-countdown">--:--:--</span>.
+      </p>
+      <button type="button" class="button button--primary" id="lock-practice-button">
+        Keep playing in Practice
+      </button>
+    </div>
     <div class="keyboard" id="keyboard"></div>
   </footer>
 </div>
@@ -196,7 +212,12 @@
       <h3>Two ways to play</h3>
       <p>
         <strong>Daily</strong> gives everyone the same word each day and keeps your streak.
-        <strong>Practice</strong> is unlimited — a new random word whenever you want one.
+        It is drawn from the trickier end of the word list, and it is once a day: when it is
+        finished it stays finished, and yesterday’s word cannot be played late.
+      </p>
+      <p>
+        <strong>Practice</strong> is unlimited — a new random word whenever you want one,
+        from the full list.
       </p>
     </div>
     <footer class="modal__footer">

@@ -405,6 +405,54 @@
   letter-spacing: -0.01em;
 }
 
+/* Daily lockout ----------------------------------------------------------- */
+
+@keyframes lockout-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/*
+  Takes the keyboard's place under a finished daily board. Deliberately calm rather than a
+  blocking overlay: the board it explains is still worth looking at.
+*/
+.lockout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  width: min(92%, 360px);
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  animation: lockout-in 320ms var(--ease-out) both;
+}
+
+.lockout__title { font-weight: 700; font-size: 0.98rem; }
+
+.lockout__text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.lockout__countdown {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lockout .button { margin-top: 4px; }
+
+@media (max-height: 640px) {
+  .lockout { padding: 8px 14px; gap: 4px; }
+  .lockout__text { font-size: 0.8rem; }
+}
+
 /* Settings --------------------------------------------------------------- */
 
 .settings { display: flex; flex-direction: column; }

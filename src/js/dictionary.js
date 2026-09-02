@@ -1,18 +1,21 @@
 /**
  * Word system: which words may be guessed, and which word is today's answer.
  *
- * Two lists are kept deliberately separate:
+ * Three lists are kept deliberately separate:
  *   ANSWERS         — common, inoffensive words that can be the solution.
+ *   DAILY_ANSWERS   — the harder subset of ANSWERS reserved for the daily.
  *   ALLOWED_GUESSES — everything else the dictionary accepts as a legal guess.
- * The union is the validation set; only ANSWERS ever feeds the puzzle rotation.
+ * The union of ANSWERS and ALLOWED_GUESSES is the validation set; only ANSWERS
+ * ever becomes a solution, and only DAILY_ANSWERS ever becomes a daily one.
  */
-import { ANSWERS } from '../data/answers.js';
+import { ANSWERS, DAILY_ANSWERS } from '../data/answers.js';
 import { ALLOWED_GUESSES } from '../data/allowed.js';
 import { DAILY_EPOCH, DAILY_SEED, WORD_LENGTH } from './config.js';
 
 const VALID_WORDS = new Set([...ANSWERS, ...ALLOWED_GUESSES]);
 
 export const answerCount = ANSWERS.length;
+export const dailyAnswerCount = DAILY_ANSWERS.length;
 export const validWordCount = VALID_WORDS.size;
 
 /** @returns {boolean} true when `word` may be submitted as a guess. */
@@ -50,12 +53,17 @@ function mulberry32(seed) {
 }
 
 /**
- * ANSWERS is ordered by word frequency, which would make the daily rotation
+ * The daily draws from DAILY_ANSWERS — the words the generator scored as
+ * hardest, by how many near-neighbours they have (SHELL/SMELL/SPELL), repeated
+ * letters, rare letters, few vowels and lower frequency. Practice keeps the
+ * whole ANSWERS list, so it stays varied and is on average the gentler mode.
+ *
+ * DAILY_ANSWERS is ordered by word frequency, which would make the rotation
  * start easy and get steadily more obscure. A seeded Fisher-Yates shuffle fixes
  * that while keeping the sequence identical for every player, forever.
  */
 const ROTATION = (() => {
-  const words = [...ANSWERS];
+  const words = [...DAILY_ANSWERS];
   const random = mulberry32(DAILY_SEED);
   for (let i = words.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
@@ -100,12 +108,12 @@ export function msUntilNextPuzzle(now = new Date()) {
   return Math.max(0, nextMidnight - now.getTime());
 }
 
-/** A uniformly random answer, for practice mode. */
+/** A uniformly random answer from the full pool, for practice mode. */
 export function randomAnswer(exclude) {
-  if (ROTATION.length === 1) return ROTATION[0];
+  if (ANSWERS.length === 1) return ANSWERS[0];
   let word;
   do {
-    word = ROTATION[Math.floor(Math.random() * ROTATION.length)];
+    word = ANSWERS[Math.floor(Math.random() * ANSWERS.length)];
   } while (word === exclude);
   return word;
 }

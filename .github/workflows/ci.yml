@@ -145,6 +145,7 @@ jobs:
           for entry in \
             assets/public/index.html \
             assets/public/src/js/main.js \
+            assets/public/src/js/progress.js \
             assets/public/src/data/answers.js
           do
             unzip -l "$APK" | grep -q "$entry" \

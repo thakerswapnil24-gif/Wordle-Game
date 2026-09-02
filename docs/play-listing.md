@@ -36,12 +36,14 @@ out the answer from what the board tells you.
 
 ONE WORD A DAY
 Everyone gets the same daily puzzle, so you and your friends are always solving
-the same word. Come back tomorrow for the next one — there is a countdown on the
-statistics screen.
+the same word. It is one attempt: when today's is done it is done, and yesterday's
+word cannot be played late. A countdown shows when the next one unlocks. Daily
+words are picked from the trickier end of the list, so they are meant to make you
+think.
 
 UNLIMITED PRACTICE
 Not content with one a day? Practice mode deals a new random word whenever you
-want one, with its own separate statistics.
+want one, from the full word list, with its own separate statistics.
 
 TRACK YOUR FORM
 Games played, wins, win percentage, current streak, best streak, and a chart of
@@ -71,7 +73,8 @@ internet connection at all.
 
 Over 18,000 five-letter words are accepted as guesses — drawn from several
 English dictionaries so the game rarely rejects a word you know — while the
-daily answers come from a hand-reviewed list of common, inoffensive words.
+daily answers come from the harder end of a hand-reviewed list of common,
+inoffensive words.
 Profanity and slurs are excluded from both.
 ```
 

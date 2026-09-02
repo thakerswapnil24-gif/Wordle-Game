@@ -10,8 +10,11 @@ import {
   BRAND, MODE, STATUS, STORAGE_KEYS,
 } from './config.js';
 import {
-  dailyAnswer, msUntilNextPuzzle, puzzleNumberFor, randomAnswer, validWordCount,
+  answerForPuzzle, msUntilNextPuzzle, puzzleNumberFor, randomAnswer, validWordCount,
 } from './dictionary.js';
+import {
+  loadProgress, noteCompleted, noteReached, resolveDaily, saveProgress,
+} from './progress.js';
 import { Game, reviveGame } from './game.js';
 import { applyResult, loadStats, saveStats } from './stats.js';
 import { buildShareText, shareText } from './share.js';
@@ -38,8 +41,16 @@ const state = {
   statsScope: MODE.DAILY,
   /** True while a reveal animation is playing; input is ignored meanwhile. */
   busy: false,
-  puzzleNumber: puzzleNumberFor(),
+  /** Durable record of the furthest daily reached and the last one completed. */
+  progress: loadProgress(),
+  /** The daily currently in play — usually today's, see syncDaily(). */
+  puzzleNumber: 1,
+  /** True once today's daily is finished; it cannot be replayed. */
+  dailyLocked: false,
+  /** True when the device clock reads earlier than a day already played. */
+  clockBehind: false,
   countdownTimer: null,
+  lockTimer: null,
 };
 
 let board;
@@ -62,6 +73,7 @@ function boot() {
     settings: new Modal($('settings-modal')),
   };
 
+  syncDaily();
   state.games[MODE.DAILY] = loadDailyGame();
   state.games[MODE.PRACTICE] = loadPracticeGame();
   // Write both back immediately so a freshly generated practice word survives
@@ -95,6 +107,10 @@ function boot() {
     syncBanner(state.mode);
     refreshAdControls();
   });
+
+  if (state.clockBehind) {
+    toast('Your device clock is behind — showing the latest daily puzzle', { duration: 3400 });
+  }
 
   if (!hasPlayedBefore()) {
     modals.help.open();
@@ -185,7 +201,7 @@ function renderHints() {
 function refreshAdControls() {
   const game = currentGame();
   const button = $('hint-button');
-  button.hidden = !(rewardedAvailable() && game.canHint);
+  button.hidden = dailyIsLocked() || !(rewardedAvailable() && game.canHint);
   const privacy = $('privacy-setting');
   if (privacy) privacy.hidden = !privacyOptionsAvailable();
 }
@@ -198,9 +214,32 @@ const markPlayed = () => storage.write(SEEN_KEY, true);
 /* Game lifecycle                                                             */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Decide which daily puzzle is in play and remember that it was reached.
+ *
+ * Normally that is simply today's. It differs only when the device clock has
+ * gone backwards, in which case the furthest puzzle already reached is served
+ * again rather than an earlier day's word — see `progress.js`.
+ *
+ * @returns {boolean} true when the puzzle number changed
+ */
+function syncDaily() {
+  const resolved = resolveDaily(puzzleNumberFor(), state.progress);
+  const changed = resolved.puzzleNumber !== state.puzzleNumber;
+  state.puzzleNumber = resolved.puzzleNumber;
+  state.clockBehind = resolved.clockBehind;
+
+  const advanced = noteReached(state.progress, resolved.puzzleNumber);
+  if (advanced !== state.progress) {
+    state.progress = advanced;
+    saveProgress(state.progress);
+  }
+  return changed;
+}
+
 function loadDailyGame() {
   const puzzleNumber = state.puzzleNumber;
-  const answer = dailyAnswer();
+  const answer = answerForPuzzle(puzzleNumber);
   const restored = storage.read(
     STORAGE_KEYS.daily,
     (raw) => reviveGame(raw, {
@@ -210,18 +249,21 @@ function loadDailyGame() {
     }),
     null,
   );
-  if (restored) {
-    // Honour a hard-mode change made between sessions, but never retroactively
-    // invalidate guesses that were already legal when they were played.
-    restored.hardMode = state.settings.hardMode;
-    return restored;
-  }
-  return new Game({
+  // Honour a hard-mode change made between sessions, but never retroactively
+  // invalidate guesses that were already legal when they were played.
+  if (restored) restored.hardMode = state.settings.hardMode;
+
+  const game = restored ?? new Game({
     mode: MODE.DAILY,
     answer,
     puzzleNumber,
     hardMode: state.settings.hardMode,
   });
+
+  // The finished board is what normally prevents a replay; the completion
+  // record is what prevents one when that board has been lost.
+  state.dailyLocked = game.isOver || state.progress.completedPuzzle >= puzzleNumber;
+  return game;
 }
 
 function loadPracticeGame() {
@@ -252,10 +294,9 @@ function persist(game) {
 }
 
 function checkDailyRollover() {
-  const puzzleNumber = puzzleNumberFor();
-  if (puzzleNumber === state.puzzleNumber) return;
-  state.puzzleNumber = puzzleNumber;
+  if (!syncDaily()) return;
   state.games[MODE.DAILY] = loadDailyGame();
+  persist(state.games[MODE.DAILY]);
   if (state.mode === MODE.DAILY) {
     board.reset();
     keyboard.reset();
@@ -265,6 +306,9 @@ function checkDailyRollover() {
   updateModeCaption();
 }
 
+/** True when the board on screen is a finished daily and must stay finished. */
+const dailyIsLocked = () => state.mode === MODE.DAILY && state.dailyLocked;
+
 /* -------------------------------------------------------------------------- */
 /* Input                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -273,7 +317,7 @@ function handleAction(action) {
   const game = currentGame();
   if (state.busy) return;
 
-  if (game.isOver) {
+  if (dailyIsLocked() || game.isOver) {
     // The board is finished — nudge the player towards what happens next.
     if (action.type === 'enter') openStats();
     return;
@@ -374,6 +418,15 @@ function finishGame(game, won) {
     });
     saveStats(state.stats);
   }
+  if (game.mode === MODE.DAILY) {
+    // One daily, once. Recorded durably so it survives losing the board.
+    state.dailyLocked = true;
+    const next = noteCompleted(state.progress, game.puzzleNumber);
+    if (next !== state.progress) {
+      state.progress = next;
+      saveProgress(state.progress);
+    }
+  }
   persist(game);
 
   const message = won ? WIN_WORDS[game.guessCount - 1] : `The word was ${game.answer.toUpperCase()}`;
@@ -381,9 +434,9 @@ function finishGame(game, won) {
   announce(won ? `${message}. Solved in ${game.guessCount} guesses.` : message);
 
   state.busy = false;
-  keyboard.setEnabled(true);
-  render();
-  refreshAdControls();
+  // renderAll rather than render: finishing changes the caption, locks the
+  // keyboard and raises the "come back tomorrow" panel, not just the board.
+  renderAll();
 
   noteGameCompleted();
   // The interstitial waits until the player has closed the statistics, so it
@@ -410,18 +463,55 @@ function renderAll() {
   const game = currentGame();
   board.render(game);
   keyboard.update(game.letterHints);
-  keyboard.setEnabled(true);
+  keyboard.setEnabled(!dailyIsLocked());
   updateModeCaption();
   renderHints();
+  renderLock();
   refreshAdControls();
+}
+
+/**
+ * Show the "come back tomorrow" panel over a finished daily, so the reason the
+ * board no longer accepts letters is on screen rather than merely implied.
+ */
+function renderLock() {
+  const panel = $('daily-lock');
+  if (!panel) return;
+  const locked = dailyIsLocked();
+  panel.hidden = !locked;
+  // The keyboard steps aside rather than sitting there greyed out: there is
+  // nothing left to type, and the panel needs the room.
+  $('keyboard').hidden = locked;
+  if (locked) startLockCountdown();
+  else stopLockCountdown();
+}
+
+function startLockCountdown() {
+  if (state.lockTimer) return;
+  const tick = () => {
+    $('lock-countdown').textContent = formatCountdown(msUntilNextPuzzle());
+  };
+  tick();
+  state.lockTimer = setInterval(() => {
+    tick();
+    checkDailyRollover();
+  }, 1000);
+}
+
+function stopLockCountdown() {
+  if (state.lockTimer) clearInterval(state.lockTimer);
+  state.lockTimer = null;
 }
 
 function updateModeCaption() {
   const game = currentGame();
   const caption = $('mode-caption');
   if (state.mode === MODE.DAILY) {
-    const done = game.isOver ? ' · solved' : '';
-    caption.textContent = `Puzzle #${game.puzzleNumber}${game.isOver ? (game.status === STATUS.WON ? done : ' · complete') : ''}`;
+    let suffix = '';
+    if (game.status === STATUS.WON) suffix = ' · solved';
+    else if (game.isOver) suffix = ' · complete';
+    else if (state.dailyLocked) suffix = ' · already played';
+    caption.textContent = `Puzzle #${game.puzzleNumber}${suffix}`;
   } else {
     caption.textContent = game.isOver ? 'Practice · tap New word' : 'Practice · unlimited rounds';
   }
@@ -457,6 +547,10 @@ function wireChrome() {
   }
 
   $('hint-button').addEventListener('click', requestHint);
+  $('lock-practice-button').addEventListener('click', (event) => {
+    blurOnPointerClick(event);
+    setMode(MODE.PRACTICE);
+  });
   $('privacy-button').addEventListener('click', async () => {
     const shown = await showPrivacyOptions();
     if (!shown) toast('Privacy options are not available on this device');
