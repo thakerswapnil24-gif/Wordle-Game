@@ -145,7 +145,19 @@
 
 .key[data-state='correct'] { background: var(--tile-correct); color: var(--tile-filled-text); }
 .key[data-state='present'] { background: var(--tile-present); color: var(--tile-filled-text); }
-.key[data-state='absent']  { background: var(--tile-absent);  color: var(--tile-filled-text); }
+
+/*
+  A ruled-out letter must be obvious without comparing it to its neighbours, so
+  it carries three cues rather than one: it darkens well below the keys still
+  worth pressing, its label dims, and it loses the lift that makes a key look
+  pressable. Colour alone is not enough — a player with colour-vision deficiency
+  reads the flatness, and a player in sunlight reads the lightness drop.
+*/
+.key[data-state='absent'] {
+  background: var(--key-absent);
+  color: var(--key-absent-text);
+  box-shadow: none;
+}
 
 .keyboard--locked { pointer-events: none; }
 .key:disabled { cursor: default; }
